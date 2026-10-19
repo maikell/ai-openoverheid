@@ -1,6 +1,10 @@
 {
   "name": "open-overheid",
-  "owner": { "name": "maikell", "url": "https://github.com/maikell" },
+  "description": "Skills en MCP-servers voor Nederlandse en Amsterdamse open overheidsdata.",
+  "owner": {
+    "name": "maikell",
+    "url": "https://github.com/maikell"
+  },
   "plugins": [
     {
       "name": "open-overheid",
