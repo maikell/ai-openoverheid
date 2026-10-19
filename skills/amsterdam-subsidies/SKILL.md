@@ -1,34 +1,51 @@
 ---
 name: amsterdam-subsidies
-description: Doorzoeken en aggregeren van het Openbaar Subsidieregister van Gemeente Amsterdam (live koppeling met het PowerBI dashboard).
+description: >-
+  Use this skill to search and aggregate the Openbaar Subsidieregister (public subsidy register) of
+  Gemeente Amsterdam: who received a subsidy, how much, under which scheme, from which department or
+  district, in which year. Live data from Datapunt Amsterdam, the same source as the PowerBI dashboard.
 ---
 
-# Amsterdam Openbaar Subsidieregister Skill
+# Amsterdam Public Subsidy Register
 
-Gebruik deze vaardigheid wanneer de gebruiker vraagt om:
-1. Het inzien of analyseren van gemeentelijke subsidies van Gemeente Amsterdam.
-2. Filteren op **onderwerp/regeling**, **datum/subsidiejaar** of **cluster** (stadsdeel of directie).
-3. Het opvragen van verleende bedragen, aanvragers en besluitdata.
+Use this skill when the user asks to:
+
+1. View or analyse municipal subsidies granted by Gemeente Amsterdam.
+2. Filter by **subject or scheme**, **date or subsidy year**, or **cluster** (district or directorate).
+3. Retrieve granted amounts, applicants and decision dates.
 
 ---
 
-## 1. Live Databron (Geen handmatige downloads!)
+## 1. Live data source (no manual downloads)
 
-In plaats van handmatig CSV's te downloaden uit het PowerBI portaal, tapt deze dienst direct in op de officiële open data stream van Datapunt Amsterdam:
+Instead of exporting CSV files from the PowerBI portal, use the official open data stream of Datapunt Amsterdam:
+
 ```http
 GET https://api.data.amsterdam.nl/v1/subsidies/openbaar_subsidieregister?_format=csv
 ```
-Deze stream wordt dagelijks bijgewerkt en bevat exact dezelfde dataset die het PowerBI dashboard voedt.
+
+The stream is updated daily and contains the same dataset that feeds the PowerBI dashboard.
+
+Main columns: `dossiernummer`, `aanvrager` (applicant), `projectnaam`, `regelingnaam` (scheme), `organisatieonderdeel` (cluster, e.g. a district), `beleidsterrein` (policy area), `bedragAangevraagd` (requested), `bedragVerleend` (granted), `subsidiejaar`, `publicatiedatumVerleningsbesluit`.
 
 ---
 
-## 2. Beschikbare MCP Tools
+## 2. MCP tools
 
-De bijbehorende MCP-server `amsterdam-subsidies` biedt twee tools:
+The `amsterdam-subsidies` MCP server offers two tools:
 
-1. **`search_subsidies`**:
-   - Zoekt records op basis van zoektermen (`query`), organisatieonderdeel (`cluster`), en subsidiejaar (`jaar`).
-   - Geeft aanvrager, projectnaam, regeling, cluster, bedragen en besluitdata terug.
+1. **`search_subsidies`**
+   - Filters records by search term (`query`, matched against applicant, project and scheme), cluster (`cluster`) and subsidy year (`jaar`).
+   - Returns applicant, project, scheme, cluster, requested and granted amounts, and decision dates.
 
-2. **`get_subsidies_summary`**:
-   - Groepeert en sommeert verleende bedragen per cluster (`organisatieonderdeel`) of beleidsterrein.
+2. **`get_subsidies_summary`**
+   - Groups and sums granted amounts per cluster (`organisatieonderdeel`) or per policy area (`beleidsterrein`).
+
+The server caches the CSV for up to 12 hours.
+
+## 3. Presenting results
+
+- Distinguish **requested** from **granted** amounts; an empty granted amount usually means no decision has been published yet.
+- Name the subsidy year and the cluster for every total.
+- Applicants can be private individuals ("Particulier"). Do not try to identify them; report amounts and schemes only.
+- Source: "Gemeente Amsterdam, Openbaar Subsidieregister (Datapunt Amsterdam)".

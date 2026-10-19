@@ -1,75 +1,95 @@
 ---
 name: omgevingsplan
-description: Zoeken en analyseren van omgevingsplannen, bestemmingsplannen, ruimtelijke regels, functies en percelen onder de Omgevingswet (DSO, PDOK, KOOP).
+description: >-
+  Use this skill to search and analyse zoning and environmental plans under the Dutch Environment and Planning
+  Act (Omgevingswet): omgevingsplannen, former bestemmingsplannen, spatial rules, permitted functions and
+  parcels for a specific address or area, using PDOK and KOOP open data. Use it for questions like "what is
+  allowed at this address" or "which plan changes has the municipality adopted".
 ---
 
-# Omgevingsplan & Ruimtelijke Ordening Skill
+# Zoning Plan (Omgevingsplan) & Spatial Planning
 
-Gebruik deze vaardigheid wanneer de gebruiker vraagt om:
-1. Het achterhalen van planologische regels of vergunningplichten op een specifiek adres/locatie.
-2. Het zoeken naar vastgestelde of ontwerpomgevingsplannen en wijzigingsbesluiten van een gemeente.
-3. Het analyseren van ruimtelijke activiteiten (zoals kappen, bouwen, monumenten, BOPA) binnen het omgevingsplan.
+Use this skill when the user asks to:
+
+1. Find the planning rules or permit requirements that apply at a specific address or location.
+2. Find adopted or draft omgevingsplannen and amendment decisions of a municipality.
+3. Analyse spatial activities (such as tree felling, building, monuments, BOPA) under the omgevingsplan.
+
+For what is registered at an address (use, floor area, construction year), use the `bag` skill. For local ordinances such as the APV, use `lokale-regelgeving`.
 
 ---
 
-## 1. Locatie-identificatie via PDOK Locatieserver
+## 1. Locating an address with the PDOK Locatieserver
 
-Om planologische regels te koppelen aan een fysieke locatie heb je de exacte coördinaten of het kadastrale perceel nodig. Gebruik hiervoor de gratis en open PDOK Locatieserver.
+To link planning rules to a physical location you need exact coordinates or the cadastral parcel. Use the free, open PDOK Locatieserver.
 
 ### Endpoint
+
 ```
-https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q={zoekterm}&rows=1
+https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q={search term}&rows=1
 ```
 
-### PowerShell Voorbeeld
+Free text can return a different address first (in a test, "Amstel 1 Amsterdam" returned *Amstel 312A-1*). Prefer filters: `?q=*&fq=type:adres&fq=postcode:1011PN&fq=huisnummer:1`, and always check the returned address.
+
+### PowerShell example
+
 ```powershell
-$adres = [uri]::EscapeDataString("Amstel 1 Amsterdam")
-$url = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=$adres&rows=1"
+$url = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=*&fq=type:adres&fq=postcode:1011PN&fq=huisnummer:1&rows=1"
 $resp = Invoke-RestMethod -Uri $url -Method Get
 $doc = $resp.response.docs[0]
 
-Write-Output "Weergavenaam: $($doc.weergavenaam)"
-Write-Output "RD Coördinaten: $($doc.centroide_rd)"
-Write-Output "WGS84 Coördinaten: $($doc.centroide_ll)"
-Write-Output "Kadastraal Perceel: $($doc.gekoppeld_perceel)"
+Write-Output "Address: $($doc.weergavenaam)"
+Write-Output "RD coordinates: $($doc.centroide_rd)"
+Write-Output "WGS84 coordinates: $($doc.centroide_ll)"
+Write-Output "Neighbourhood code: $($doc.buurtcode)"
 ```
 
 ---
 
-## 2. Bekendmakingen en Wijzigingsbesluiten via KOOP SRU
+## 2. Publications and amendments via KOOP SRU
 
-Alle officiële publicaties van omgevingsplannen, voorbereidingsbesluiten en wijzigingen worden gepubliceerd via de KOOP Open Data SRU endpoint.
+All official publications of omgevingsplannen, preparatory decisions and amendments are published through the KOOP Open Data SRU endpoint.
 
-### Query Formaat (CQL)
+### Query format (CQL)
+
 ```
-c.product-area=officielepublicaties AND dt.type="ruimtelijk plan of omgevingsdocument" AND cql.textAndIndexes="{zoekterm}"
+c.product-area=officielepublicaties AND dt.type="ruimtelijk plan of omgevingsdocument" AND cql.textAndIndexes="{search term}"
 ```
 
-Optioneel filteren op bevoegd gezag (bijv. gemeente):
+Optional filter on the competent authority (e.g. a municipality):
+
 ```
 dt.creator="Gemeente Amsterdam"
 ```
 
-### PowerShell Voorbeeld: Recente Omgevingsplan publicaties ophalen
+### PowerShell example: recent omgevingsplan publications
+
 ```powershell
 $query = 'c.product-area=officielepublicaties AND dt.type="ruimtelijk plan of omgevingsdocument" AND cql.textAndIndexes="Omgevingsplan" AND dt.creator="Gemeente Amsterdam"'
 $encodedQuery = [uri]::EscapeDataString($query)
 $url = "https://repository.overheid.nl/sru?operation=searchRetrieve&version=1.2&query=$encodedQuery&maximumRecords=5"
 
 $resp = Invoke-RestMethod -Uri $url -Method Get
-# De XML bevat Dublin Core records met titels, identifiers en links naar de officiële documenten
+# The XML holds Dublin Core records with titles, identifiers and links to the official documents
 ```
 
 ---
 
-## 3. Juridische Structuur van het Omgevingsplan (Omgevingswet)
+## 3. Legal structure of the omgevingsplan (Omgevingswet)
 
-Bij het interpreteren van regels voor een gebruiker:
-- **Tijdelijk deel van het omgevingsplan**:
-  - Bestaat tot eind 2031 uit alle geldende bestemmingsplannen van vóór 1 januari 2024.
-  - Bevat de **Bruidsschat**: een set rijksregels over o.a. bouwen, milieu en geluid die per 1 januari 2024 zijn overgedragen aan de gemeenten.
-  - Bevat lokale verordeningen die overgaan naar het omgevingsplan (zoals de Algemene Plaatselijke Verordening m.b.t. kapverboden en bomen).
-- **Nieuw deel van het omgevingsplan**:
-  - Wijzigingsbesluiten die sinds 1 januari 2024 door de gemeenteraad zijn vastgesteld conform de STOP/TPOD standaard.
+When interpreting rules for a user:
+
+- **Temporary part of the omgevingsplan** (*tijdelijk deel*):
+  - Until the end of 2031 it consists of all zoning plans (bestemmingsplannen) adopted before 1 January 2024.
+  - It includes the **Bruidsschat**: a set of national rules on building, environment and noise that were transferred to municipalities on 1 January 2024.
+  - It includes local ordinances that move into the omgevingsplan (such as APV rules on tree felling).
+- **New part of the omgevingsplan** (*nieuw deel*):
+  - Amendment decisions adopted by the municipal council since 1 January 2024 under the STOP/TPOD standard.
 - **BOPA (Buitenplanse Omgevingsplanactiviteit)**:
-  - Indien een activiteit (zoals bouwen of kappen) in strijd is met het omgevingsplan, kan een omgevingsvergunning voor een BOPA worden aangevraagd. Hierop is de reguliere procedure (8 weken) in beginsel van toepassing.
+  - If an activity (such as building or felling) conflicts with the omgevingsplan, a permit for a BOPA can be requested. The regular procedure (8 weeks) applies in principle.
+
+## Presenting results
+
+- Name the plan or publication, its status (draft or adopted), the authority and the date, with a link.
+- Explain which part of the omgevingsplan a rule comes from when that matters.
+- This is information, not legal advice; for a specific case the municipality's own assessment applies.

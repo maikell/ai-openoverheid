@@ -2,7 +2,7 @@
 
 **English** · [Nederlands](README.nl.md)
 
-Skills and MCP servers that let an AI assistant work directly with Dutch and Amsterdam open government data: national statistics (CBS), council meetings and documents, zoning plans, court rulings, official publications, neighbourhood statistics, Woo (Freedom of Information) decisions and the municipal subsidy register.
+Skills and MCP servers that let an AI assistant work directly with Dutch and Amsterdam open government data: addresses and buildings (BAG), local regulations in force (CVDR), national statistics (CBS), council meetings and documents, zoning plans, court rulings, official publications, neighbourhood statistics, Woo (Freedom of Information) decisions and the municipal subsidy register.
 
 The toolkit is **AI-agnostic**. It is built on two open formats, so the same files work with several assistants:
 
@@ -35,9 +35,11 @@ The data is Dutch, so skill names and some instructions are in Dutch. Assistants
 | :--- | :--- | :--- |
 | `amsterdam-subsidies` | Search and aggregate the Amsterdam public subsidy register (amounts, applicants, departments). | Datapunt Amsterdam (CSV stream) + MCP server |
 | `amsterdam-woo` | Search Woo/Wob (FOI) decisions and retrieve the released PDFs. | Memorix Mediabank (`open.amsterdam`) + MCP server |
+| `bag` | Addresses and buildings: official address, use, floor area, construction year, units per building and CBS area codes. | PDOK Locatieserver + BAG OGC API + MCP server |
 | `omgevingsplan` | Geocode an address to coordinates/parcel and find zoning rules under the Environment and Planning Act (Omgevingswet). | PDOK Locatieserver, KOOP SRU |
 | `rechtspraak` | Search and read Dutch court rulings by ECLI. | `data.rechtspraak.nl` |
 | `officiele-bekendmakingen` | Municipal gazettes, Government Gazette, permits and regulations. | KOOP SRU 1.2 |
+| `lokale-regelgeving` | Local regulations in force (APV, ordinances, policy rules) of municipalities, provinces and water boards, by date and article. | CVDR via KOOP SRU + MCP server |
 | `amsterdam-kerncijfers` | District and neighbourhood statistics (BBGA). | Amsterdam Research & Statistics (O&S) |
 | `cbs` | Statistics for every Dutch municipality, district and neighbourhood (population, income, housing, facilities), to compare areas and draw neighbourhood maps without a map service. Explained in `references/cbs-statline.md`. | CBS StatLine OData v4 (`datasets.cbs.nl`) + MCP server |
 | `raadsinformatie` | Council and district committee meetings, agendas, motions, letters and minutes, with direct PDF links. | NotuBiz API (`amsterdam.raadsinformatie.nl`) + MCP server |
@@ -50,12 +52,14 @@ The data is Dutch, so skill names and some instructions are in Dutch. Assistants
 | `amsterdam-subsidies` | `search_subsidies`, `get_subsidies_summary` |
 | `amsterdam-raadsinformatie` | `get_meetings`, `get_meeting_agenda` |
 | `cbs` | `cbs_search_tables`, `cbs_get_table_info`, `cbs_find_codes`, `cbs_get_observations` |
+| `lokale-regelgeving` | `lr_zoek_regelingen`, `lr_inhoudsopgave`, `lr_artikel` |
+| `bag` | `bag_zoek_adres`, `bag_adresinfo`, `bag_pand` |
 
 ## 📁 Repository layout
 
 ```
 skills/<name>/SKILL.md            The skills (shared by all environments)
-mcp/*.ps1                         Four MCP servers (stdio, PowerShell)
+mcp/*.ps1                         Six MCP servers (stdio, PowerShell)
 rules/AGENTS.md                   General agent guidelines (loaded automatically by Antigravity)
 plugin.json                       Plugin manifest for Antigravity
 mcp_config.example.json           MCP config template for Antigravity
@@ -166,6 +170,14 @@ MCP servers do not run in the web app; the skills fall back to calling the APIs 
       "cbs": {
         "command": "powershell.exe",
         "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<path-to-repo>/mcp/cbs_mcp.ps1"]
+      },
+      "lokale-regelgeving": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<path-to-repo>/mcp/lokale_regelgeving_mcp.ps1"]
+      },
+      "bag": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<path-to-repo>/mcp/bag_mcp.ps1"]
       }
     }
   }
@@ -196,6 +208,8 @@ Files are UTF-8 without BOM. Keep the `.ps1` files ASCII (no accented characters
 - *"Give me the key figures for the neighbourhood around Amstel 1."*
 - *"What is on the agenda of the next Stadsdeel Nieuw-West committee meeting?"*
 - *"Compare the share of residents aged 65+ in Osdorp with Amsterdam as a whole (CBS)."*
+- *"What does the Amsterdam APV say about terraces?"*
+- *"What is the construction year and use of Amstel 1 in Amsterdam?"*
 
 ## 🧪 Example data convention
 

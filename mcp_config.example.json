@@ -39,6 +39,26 @@
         "-File",
         "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\cbs_mcp.ps1"
       ]
+    },
+    "lokale-regelgeving": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\lokale_regelgeving_mcp.ps1"
+      ]
+    },
+    "bag": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\bag_mcp.ps1"
+      ]
     }
   }
 }

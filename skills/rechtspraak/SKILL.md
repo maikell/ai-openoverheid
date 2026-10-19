@@ -5,37 +5,42 @@ description: >-
   rulings, or jurisprudence from the Dutch judiciary (Rechtspraak.nl, data.rechtspraak.nl, ECLI).
 ---
 
-# Rechtspraak Open Data & Jurisprudentie Retrieval
+# Dutch Case Law (Rechtspraak Open Data & ECLI)
 
-This skill teaches how to search and retrieve official Dutch court judgments (*rechterlijke uitspraken*) from the **Raad voor de Rechtspraak**.
+This skill explains how to search and retrieve official Dutch court rulings (*rechterlijke uitspraken*) published by the **Raad voor de Rechtspraak** (Council for the Judiciary).
 
-## Architectuur & Endpoints
+## Architecture and endpoints
 
-Alle uitspraken worden gepubliceerd via de openbare RESTful API op `https://data.rechtspraak.nl`.
+All published rulings are available through the public RESTful API at `https://data.rechtspraak.nl`.
 
-Het proces bestaat uit twee stappen:
-1. **Index bevragen**: Zoeken naar ECLI-identificatiecodes op basis van instantie, datum en rechtsgebied.
-2. **Uitspraaktekst ophalen**: De volledige XML-uitspraak ophalen via het ECLI-nummer.
+The process has two steps:
+
+1. **Query the index:** search for ECLI identifiers by court, date and area of law.
+2. **Fetch the ruling:** retrieve the full XML of a ruling by its ECLI.
 
 ---
 
-## 1. Zoeken in de Index (`/uitspraken/zoeken`)
+## 1. Searching the index (`/uitspraken/zoeken`)
 
-Zoekopdrachten worden uitgevoerd via een `GET` request.
+Searches are `GET` requests.
 
-### Belangrijkste gerechten (`instantie` parameter):
-- `HR`: Hoge Raad der Nederlanden
-- `RVS`: Afdeling bestuursrechtspraak van de Raad van State
-- `CRVB`: Centrale Raad van Beroep
-- `CBB`: College van Beroep voor het bedrijfsleven
-- `GHAMS`: Gerechtshof Amsterdam
+### Main courts (`instantie` parameter)
+
+- `HR`: Hoge Raad der Nederlanden (Supreme Court)
+- `RVS`: Afdeling bestuursrechtspraak van de Raad van State (Council of State, administrative jurisdiction)
+- `CRVB`: Centrale Raad van Beroep (Central Appeals Tribunal)
+- `CBB`: College van Beroep voor het bedrijfsleven (Trade and Industry Appeals Tribunal)
+- `GHAMS`: Gerechtshof Amsterdam (Court of Appeal Amsterdam)
 - `GHDHA`: Gerechtshof Den Haag
-- `RBAMS`: Rechtbank Amsterdam
+- `RBAMS`: Rechtbank Amsterdam (District Court Amsterdam)
 - `RBDHA`: Rechtbank Den Haag
 - `RBMNE`: Rechtbank Midden-Nederland
 - `RBROT`: Rechtbank Rotterdam
 
-### PowerShell voorbeeld (Zoeken op datum & instantie):
+For municipal decisions (permits, enforcement, Woo), appeals usually go to the district court (e.g. `RBAMS`) and then to the Council of State (`RVS`).
+
+### PowerShell example (search by date and court)
+
 ```powershell
 $url = "https://data.rechtspraak.nl/uitspraken/zoeken?instantie=HR&date=2026-01-01..2026-10-17&return=DOC&max=5"
 $wc = New-Object System.Net.WebClient
@@ -44,19 +49,20 @@ $wc.Encoding = [System.Text.Encoding]::UTF8
 
 foreach ($entry in $feed.feed.entry) {
     Write-Host "ECLI: $($entry.id)"
-    Write-Host "Titel: $($entry.title.InnerText)"
+    Write-Host "Title: $($entry.title.InnerText)"
     Write-Host "Link: $($entry.link.href)"
 }
 ```
 
 ---
 
-## 2. Volledige uitspraaktekst ophalen (`/uitspraken/content`)
+## 2. Fetching the full text (`/uitspraken/content`)
 
-Om de inhoud, rechtsoverwegingen en de beslissing van een uitspraak te lezen:
+To read the content, considerations and decision of a ruling:
 `GET https://data.rechtspraak.nl/uitspraken/content?id={ECLI}`
 
-### PowerShell voorbeeld:
+### PowerShell example
+
 ```powershell
 $ecli = "ECLI:NL:HR:2023:1"
 $url = "https://data.rechtspraak.nl/uitspraken/content?id=$ecli"
@@ -64,9 +70,17 @@ $wc = New-Object System.Net.WebClient
 $wc.Encoding = [System.Text.Encoding]::UTF8
 [xml]$doc = $wc.DownloadString($url)
 
-# Inhoudelijke paragrafen
+# Paragraphs of the ruling
 $paragraphs = $doc.SelectNodes("//para")
 foreach ($p in $paragraphs) {
     Write-Host $p.InnerText
 }
 ```
+
+The API allows at most 10 requests per second. See [rechtspraak_api_reference.md](references/rechtspraak_api_reference.md) for all parameters and value lists.
+
+## Presenting results
+
+- Give the ECLI, court, date, area of law and a short summary of the decision, with a link to `uitspraken.rechtspraak.nl`.
+- Published rulings are pseudonymised; do not try to identify parties.
+- Rulings explain the law for one case. Do not present them as advice for the user's own situation.

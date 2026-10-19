@@ -5,34 +5,34 @@ description: >-
   Netherlands) or StatLine: population, age, households, income, housing, benefits, health, crime, energy,
   facilities, per municipality, district (wijk) or neighbourhood (buurt), or to compare Dutch areas and
   municipalities with each other (e.g. Amsterdam Nieuw-West versus other cities), or to show such figures on a
-  map of districts and neighbourhoods. Gebruik ook bij vragen over
-  CBS-cijfers, kerncijfers wijken en buurten en landelijke vergelijkingen.
+  map of districts and neighbourhoods. Also use it for questions about CBS-cijfers, kerncijfers wijken en
+  buurten and national comparisons.
 ---
 
 # CBS StatLine (open data)
 
-Gebruik deze skill voor officiële statistieken van het CBS, voor heel Nederland, tot op buurtniveau.
+Use this skill for official CBS statistics for the whole of the Netherlands, down to neighbourhood level.
 
-- **Bron:** CBS StatLine via de open data-API `https://datasets.cbs.nl/odata/v1` (OData v4).
-- **Geen sleutel nodig.** Licentie **CC BY 4.0**: vermeld altijd "Bron: CBS" bij cijfers.
-- Uitgebreide uitleg van de API, codes en valkuilen: [references/cbs-statline.md](references/cbs-statline.md).
+- **Source:** CBS StatLine through the open data API `https://datasets.cbs.nl/odata/v1` (OData v4).
+- **No key required.** Licence **CC BY 4.0**: always credit "Source: CBS" with figures.
+- Full explanation of the API, codes and pitfalls: [references/cbs-statline.md](references/cbs-statline.md).
 
-## Wanneer welke bron
+## Which source to use
 
-| Vraag | Gebruik |
+| Question | Use |
 | :--- | :--- |
-| Amsterdamse cijfers met eigen gemeentelijke indicatoren (BBGA, gebiedsgerichte gebieden) | skill `amsterdam-kerncijfers` |
-| Landelijke cijfers, andere gemeenten, vergelijken tussen gemeenten, of CBS als bron | **deze skill** |
-| Beide | Haal beide op en noem bij elk getal de bron; definities en peildata kunnen verschillen. |
+| Amsterdam figures with the city's own indicators (BBGA, Amsterdam area divisions) | skill `amsterdam-kerncijfers` |
+| National figures, other municipalities, comparisons between municipalities, or CBS as the source | **this skill** |
+| Both | Fetch both and name the source of each figure; definitions and reference dates can differ. |
 
-## Werkwijze (4 stappen)
+## Workflow (4 steps)
 
-1. **Tabel kiezen.** Voor buurtvragen is de standaardtabel **`86165NED` — Kerncijfers wijken en buurten 2025**. Voor andere onderwerpen: zoek met `cbs_search_tables` (bijv. "inkomen", "bevolking", "criminaliteit") en kies de nieuwste relevante tabel.
-2. **Dimensies bekijken.** `cbs_get_table_info` toont de dimensies, bijv. `WijkenEnBuurten`, of `RegioS` en `Perioden` in andere tabellen.
-3. **Codes opzoeken.**
-   - Onderwerpen: `cbs_find_codes` met `dimension: "Measure"` en een zoekterm (bijv. "inwoners" → `T001036`).
-   - Gebieden: `cbs_find_codes` met `dimension: "WijkenEnBuurten"` en een plaatsnaam (bijv. "Osdorp").
-4. **Cijfers ophalen.** `cbs_get_observations` met `measures` en `filters`, bijv.:
+1. **Choose a table.** For neighbourhood questions the default table is **`86165NED`, Kerncijfers wijken en buurten 2025**. For other subjects, search with `cbs_search_tables` (e.g. "inkomen", "bevolking", "criminaliteit"; table titles are in Dutch) and pick the most recent relevant table.
+2. **Inspect the dimensions.** `cbs_get_table_info` lists the dimensions, e.g. `WijkenEnBuurten`, or `RegioS` and `Perioden` in other tables.
+3. **Look up codes.**
+   - Subjects: `cbs_find_codes` with `dimension: "Measure"` and a search term (e.g. "inwoners" gives `T001036`, number of residents).
+   - Areas: `cbs_find_codes` with `dimension: "WijkenEnBuurten"` and a place name (e.g. "Osdorp").
+4. **Fetch the figures.** `cbs_get_observations` with `measures` and `filters`, e.g.:
 
    ```json
    { "table_id": "86165NED",
@@ -40,38 +40,38 @@ Gebruik deze skill voor officiële statistieken van het CBS, voor heel Nederland
      "filters": { "WijkenEnBuurten": ["GM0363", "WK0363FJ"] } }
    ```
 
-Filter altijd op maatstaf en/of gebied: een complete tabel bevat al snel meer dan een miljoen waarden.
+Always filter on measure and/or area: a complete table easily holds more than a million values.
 
-## Gebiedscodes (voorbeelden)
+## Area codes (examples)
 
-| Code | Gebied |
+| Code | Area |
 | :--- | :--- |
-| `NL00` | Nederland |
-| `GM0363` | Gemeente Amsterdam |
-| `WK0363..` | Wijk in Amsterdam (bijv. `WK0363FJ` Osdorp-Midden) |
-| `BU0363....` | Buurt in Amsterdam (bijv. `BU0363FK03` Osdorpplein e.o.) |
+| `NL00` | The Netherlands |
+| `GM0363` | Municipality of Amsterdam |
+| `WK0363..` | District in Amsterdam (e.g. `WK0363FJ` Osdorp-Midden) |
+| `BU0363....` | Neighbourhood in Amsterdam (e.g. `BU0363FK03` Osdorpplein e.o.) |
 
-Voor Amsterdam volgen de letters na `0363` de gemeentelijke gebiedsindeling; de `F` hoort bij Stadsdeel Nieuw-West. Controleer een code altijd met `cbs_find_codes` voordat je hem gebruikt; wijk- en buurtindelingen veranderen per jaar.
+For Amsterdam, the letters after `0363` follow the city's own area division; `F` belongs to Stadsdeel Nieuw-West. Always check a code with `cbs_find_codes` before using it; district and neighbourhood boundaries change from year to year.
 
-## Koppelen met andere skills
+## Linking with other skills
 
-- **Adres → buurt:** de PDOK Locatieserver (skill `omgevingsplan`) geeft bij een adres ook `buurtcode` en `wijkcode`. Die zijn direct bruikbaar als `WijkenEnBuurten`-code.
-- **Vergelijking:** zet Amsterdamse BBGA-cijfers naast CBS-cijfers voor dezelfde wijk, met de bron per getal.
+- **Address to neighbourhood:** the `bag` skill (and the PDOK Locatieserver in `omgevingsplan`) returns `buurtcode` and `wijkcode` for an address. These can be used directly as `WijkenEnBuurten` codes.
+- **Comparison:** put Amsterdam BBGA figures next to CBS figures for the same district, naming the source of each.
 
-## Zonder MCP-server
+## Without the MCP server
 
-Alle tools zijn gewone HTTP GET-verzoeken; zie de referentie voor de URL's. Voorbeeld:
+All tools are plain HTTP GET requests; see the reference for the URLs. Example:
 
 ```text
 https://datasets.cbs.nl/odata/v1/CBS/86165NED/Observations?$filter=Measure eq 'T001036' and WijkenEnBuurten eq 'GM0363'
 ```
 
-## Presentatie
+## Presentation
 
-- Noem tabelnummer, tabeltitel en peiljaar bij elk antwoord.
-- Geef `StringValue` (tekst) of `Value` (getal) met de eenheid uit de maatstaf.
-- Een `ValueAttribute` anders dan `None` betekent bijvoorbeeld geheim of onbekend: zeg dat, vul niets zelf in.
-- Afgeronde of voorlopige cijfers: vermeld de status uit `cbs_get_table_info`.
+- Give the table number, table title and reference year with every answer.
+- Report `StringValue` (text) or `Value` (number) with the unit from the measure.
+- A `ValueAttribute` other than `None` means, for example, confidential or unknown: say so and never fill in a value yourself.
+- For rounded or provisional figures, mention the status from `cbs_get_table_info`.
 
 ## Maps of CBS figures
 

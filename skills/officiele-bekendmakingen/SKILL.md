@@ -6,64 +6,68 @@ description: >-
   officielebekendmakingen.nl or repository.overheid.nl (KOOP Open Data).
 ---
 
-# Officiële Bekendmakingen & KOOP Open Data
+# Official Publications (Officiële Bekendmakingen) & KOOP Open Data
 
-This skill teaches how to search and retrieve official Dutch government publications (*Officiële Bekendmakingen*) from **KOOP** (Kennis- en exploitatiecentrum Officiële Overheidspublicaties).
+This skill explains how to search and retrieve official Dutch government publications (*Officiële Bekendmakingen*) from **KOOP** (Kennis- en exploitatiecentrum Officiële Overheidspublicaties).
 
-## Bron & Architectuur
+Use it for the **publication** of a decision (when it appeared, in which gazette). For the consolidated text of a local regulation that applies today, use the `lokale-regelgeving` skill instead.
 
-The website `https://www.officielebekendmakingen.nl/` provides public access to:
-- **Gemeentebladen** (Gemeentelijke verordeningen, besluiten, vergunningen)
-- **Provinciale bladen**
-- **Waterschapsbladen**
-- **Staatscourant**
-- **Staatsblad**
-- **Tractatenblad**
-- **Parlementaire documenten** (Kamerstukken, Handelingen)
+## Source and architecture
 
-Instead of scraping HTML, KOOP provides the public SRU 1.2 webservice:
+`https://www.officielebekendmakingen.nl/` provides public access to:
+
+- **Gemeenteblad** (municipal gazette: ordinances, decisions, permits)
+- **Provinciaal blad** (provincial gazette)
+- **Waterschapsblad** (water board gazette)
+- **Staatscourant** (Government Gazette)
+- **Staatsblad** (Bulletin of Acts and Decrees)
+- **Tractatenblad** (treaties)
+- **Parliamentary papers** (Kamerstukken, Handelingen)
+
+Instead of scraping HTML, use the public KOOP SRU 1.2 web service:
 **`https://repository.overheid.nl/sru`**
 
 ---
 
-## Zoeken via CQL (Context Query Language)
+## Searching with CQL (Contextual Query Language)
 
-Een zoekvraag wordt opgebouwd met CQL parameters en verzonden via `GET`:
+A query is built from CQL parameters and sent as a `GET` request.
 
-### Belangrijkste parameters:
+### Main parameters
+
 1. `operation=searchRetrieve`
 2. `version=1.2`
-3. `maximumRecords=10` (of gewenst aantal)
-4. `startRecord=1` (voor paginering)
-5. `query=...` (CQL string)
+3. `maximumRecords=10` (or the number you need)
+4. `startRecord=1` (paging)
+5. `query=...` (the CQL string)
 
-### Voorbeelden van CQL zoekopdrachten:
+### Example CQL queries
 
-- **Zoeken op tekst in officiële publicaties:**
+- **Full text in official publications:**
   ```text
   c.product-area=officielepublicaties AND cql.textAndIndexes="omgevingsvergunning"
   ```
 
-- **Filteren op gemeente/instantie en jaartal:**
+- **Filter by authority and date:**
   ```text
   c.product-area=officielepublicaties AND cql.textAndIndexes="bestemmingsplan" AND dt.creator="Gemeente Amsterdam" AND dt.issued>=2026-01-01
   ```
 
-- **Filteren op publicatietype (bijv. Gemeenteblad):**
+- **Filter by publication type (e.g. Gemeenteblad):**
   ```text
   c.product-area=officielepublicaties AND dt.type="Gemeenteblad" AND dt.creator="Stadsdeel Nieuw-West"
   ```
 
-- **Filteren op Staatsblad:**
+- **Staatsblad since a date:**
   ```text
   c.product-area=officielepublicaties AND dt.type="Staatsblad" AND dt.issued>=2026-01-01
   ```
 
+For local notices (permit applications and similar), the product area `lokalebekendmakingen` can be used instead of `officielepublicaties`.
+
 ---
 
-## Ophalen in PowerShell / Scripts
-
-Voorbeeld van een PowerShell aanroep om records op te vragen:
+## Fetching in PowerShell
 
 ```powershell
 $query = 'c.product-area=officielepublicaties AND cql.textAndIndexes="vergunning" AND dt.creator="Gemeente Amsterdam"'
@@ -72,17 +76,23 @@ $url = "https://repository.overheid.nl/sru?operation=searchRetrieve&version=1.2&
 
 [xml]$res = (New-Object System.Net.WebClient).DownloadString($url)
 $total = $res.searchRetrieveResponse.numberOfRecords
-Write-Host "Aantal gevonden publicaties: $total"
+Write-Host "Publications found: $total"
 
-# Doorzoek de records
+# Walk the records
 $records = $res.searchRetrieveResponse.records.record
 foreach ($rec in $records) {
-    # Metadata staat in $rec.recordData
+    # Metadata is in $rec.recordData
     Write-Host "Record ID: $($rec.recordIdentifier)"
 }
 ```
 
 ---
 
-## Documentatie & Referenties
-- Zie [sru_api_reference.md](references/sru_api_reference.md) voor de volledige velden- en indexenlijst.
+## Documentation and references
+
+- See [sru_api_reference.md](references/sru_api_reference.md) for the full list of fields and indexes.
+
+## Presenting results
+
+- Give the title, publication type, issuing authority, publication date and the identifier (e.g. `gmb-2026-12345`) with a link.
+- A publication date is not the date a rule takes effect; check the text or the `lokale-regelgeving` skill for the entry-into-force date.

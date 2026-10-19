@@ -2,13 +2,19 @@
 
 All notable changes to the AI Open Overheid Toolkit.
 
-## Unreleased
+## 1.8.0 – 2026-10-20
 
 ### Added
-- `docs/architecture-v2.png`: overview diagram of all skills and MCP servers, shown in both READMEs.
+- **`lokale-regelgeving` skill and MCP server** (`lr_zoek_regelingen`, `lr_inhoudsopgave`, `lr_artikel`) for the consolidated local regulations in CVDR, such as the Amsterdam APV, filtered on the date they apply. Reference: `skills/lokale-regelgeving/references/cvdr_sru_reference.md`.
+  - *Why:* the toolkit could find the Gemeenteblad decisions that change a regulation, but not the text that applies today, which only CVDR provides. CVDR keeps every version (more than 70 for the Amsterdam APV), so the tools filter on today by default. The service uses `overheidrg.keyword` instead of `cql.textAndIndexes` and stores article numbers in two ways; both are handled so searches and article lookups do not fail silently.
+- **`bag` skill and MCP server** (`bag_zoek_adres`, `bag_adresinfo`, `bag_pand`) for addresses and buildings from the BAG via PDOK: official address, use, floor area, construction year, units per building, all addresses of an object, and the CBS neighbourhood and district codes. Reference: `skills/bag/references/bag_pdok_reference.md`.
+  - *Why:* almost every question in this toolkit starts from an address, but there was no authoritative source for what is registered there. The returned CBS area codes link an address directly to statistics and maps. Free-text geocoding ranked the wrong address first in a test ("Amstel 1 Amsterdam" returned Amstel 312A-1), so the tools prefer exact postcode + house number and return candidates instead of guessing. One object can have several addresses (the Stopera is Amstel 1 and Waterlooplein 6); all are returned.
+- **`docs/architecture-v2.png`**: overview diagram of the skills and MCP servers, shown in both READMEs.
+  - *Why:* the previous diagram showed only five components and Antigravity as the only host.
 
-### Why
-- The previous diagram showed only five components and Antigravity as the only host. The new one reflects the current state: eight skills, four MCP servers and support for both Gemini (Antigravity) and Claude.
+### Changed
+- **All `SKILL.md` files are written in English.** Dutch official names (Woo, APV, Gemeenteblad, Raad van State) and Dutch API field names are kept as they are.
+  - *Why:* the toolkit is public and AI-agnostic. English instructions are read most reliably by every assistant (Gemini and Claude) and by contributors outside the Netherlands, and match the English README. The skill files previously mixed Dutch and English.
 
 ## 1.7.0
 

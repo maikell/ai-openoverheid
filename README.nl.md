@@ -2,7 +2,7 @@
 
 [English](README.md) · **Nederlands**
 
-Skills en MCP-servers waarmee een AI-assistent rechtstreeks werkt met Nederlandse en Amsterdamse open overheidsdata: landelijke statistiek (CBS), raadsvergaderingen en raadsstukken, omgevingsplannen, rechterlijke uitspraken, officiële bekendmakingen, buurtstatistieken, Woo-besluiten en het subsidieregister.
+Skills en MCP-servers waarmee een AI-assistent rechtstreeks werkt met Nederlandse en Amsterdamse open overheidsdata: adressen en gebouwen (BAG), geldende lokale regelgeving (CVDR), landelijke statistiek (CBS), raadsvergaderingen en raadsstukken, omgevingsplannen, rechterlijke uitspraken, officiële bekendmakingen, buurtstatistieken, Woo-besluiten en het subsidieregister.
 
 De toolkit is **AI-agnostisch**. Hij is gebouwd op twee open formaten, zodat dezelfde bestanden met verschillende assistenten werken:
 
@@ -33,9 +33,11 @@ Zonder MCP-servers werken de skills ook: ze beschrijven de onderliggende API's, 
 | :--- | :--- | :--- |
 | `amsterdam-subsidies` | Doorzoeken en optellen van het Openbaar Subsidieregister (bedragen, aanvragers, clusters). | Datapunt Amsterdam (CSV-stream) + MCP-server |
 | `amsterdam-woo` | Zoeken in Woo- en Wob-besluiten en ophalen van de PDF's. | Memorix Mediabank (`open.amsterdam`) + MCP-server |
+| `bag` | Adressen en gebouwen: officieel adres, gebruiksdoel, oppervlakte, bouwjaar, aantal verblijfsobjecten en CBS-gebiedscodes. | PDOK Locatieserver + BAG OGC API + MCP-server |
 | `omgevingsplan` | Adres naar coördinaten/perceel, en planregels onder de Omgevingswet. | PDOK Locatieserver, KOOP SRU |
 | `rechtspraak` | Zoeken en lezen van uitspraken via ECLI. | `data.rechtspraak.nl` |
 | `officiele-bekendmakingen` | Gemeentebladen, Staatscourant, vergunningen en regelgeving. | KOOP SRU 1.2 |
+| `lokale-regelgeving` | Geldende lokale regelgeving (APV, verordeningen, beleidsregels) van gemeenten, provincies en waterschappen, per datum en artikel. | CVDR via KOOP SRU + MCP-server |
 | `amsterdam-kerncijfers` | Wijk- en buurtstatistieken (BBGA). | Onderzoek & Statistiek Amsterdam |
 | `cbs` | Statistieken voor elke gemeente, wijk en buurt in Nederland (bevolking, inkomen, wonen, voorzieningen), om gebieden te vergelijken en buurtkaarten te maken zonder kaartdienst. Uitleg in `references/cbs-statline.md`. | CBS StatLine OData v4 (`datasets.cbs.nl`) + MCP-server |
 | `raadsinformatie` | Vergaderingen van gemeenteraad en stadsdeelcommissies, agenda's, moties, brieven en verslagen, met directe PDF-links. | NotuBiz API (`amsterdam.raadsinformatie.nl`) + MCP-server |
@@ -48,12 +50,14 @@ Zonder MCP-servers werken de skills ook: ze beschrijven de onderliggende API's, 
 | `amsterdam-subsidies` | `search_subsidies`, `get_subsidies_summary` |
 | `amsterdam-raadsinformatie` | `get_meetings`, `get_meeting_agenda` |
 | `cbs` | `cbs_search_tables`, `cbs_get_table_info`, `cbs_find_codes`, `cbs_get_observations` |
+| `lokale-regelgeving` | `lr_zoek_regelingen`, `lr_inhoudsopgave`, `lr_artikel` |
+| `bag` | `bag_zoek_adres`, `bag_adresinfo`, `bag_pand` |
 
 ## 📁 Opbouw
 
 ```
 skills/<naam>/SKILL.md            De skills (gedeeld door alle omgevingen)
-mcp/*.ps1                         Vier MCP-servers (stdio, PowerShell)
+mcp/*.ps1                         Zes MCP-servers (stdio, PowerShell)
 rules/AGENTS.md                   Algemene richtlijnen (Antigravity laadt dit automatisch)
 plugin.json                       Pluginbeschrijving voor Antigravity
 mcp_config.example.json           MCP-voorbeeldconfiguratie voor Antigravity
@@ -164,6 +168,14 @@ MCP-servers draaien niet in de webapp; de skills roepen de API's dan zelf aan. C
       "cbs": {
         "command": "powershell.exe",
         "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<pad-naar-repo>/mcp/cbs_mcp.ps1"]
+      },
+      "lokale-regelgeving": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<pad-naar-repo>/mcp/lokale_regelgeving_mcp.ps1"]
+      },
+      "bag": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<pad-naar-repo>/mcp/bag_mcp.ps1"]
       }
     }
   }
@@ -194,6 +206,8 @@ Bestanden zijn UTF-8 zonder BOM. Houd de `.ps1`-bestanden ASCII (geen accenten),
 - *"Geef de kerncijfers voor de buurt rond Amstel 1."*
 - *"Wat staat er op de agenda van de eerstvolgende vergadering van Stadsdeel Nieuw-West?"*
 - *"Vergelijk het aandeel inwoners van 65 jaar of ouder in Osdorp met heel Amsterdam (CBS)."*
+- *"Wat zegt de APV van Amsterdam over terrassen?"*
+- *"Wat is het bouwjaar en gebruiksdoel van Amstel 1 in Amsterdam?"*
 
 ## 🧪 Conventie voor voorbeelddata
 

@@ -86,3 +86,19 @@ Wanneer de gebruiker vragen stelt over Nederlandse open overheidsdata, jurisprud
 - Filter altijd op maatstaf en/of gebied; volg `@odata.nextLink` bij grote antwoorden (max 100.000 cellen per antwoord).
 - Zet CBS-cijfers en BBGA-cijfers (`amsterdam-kerncijfers`) alleen naast elkaar met de bron per getal; definities en peildata kunnen verschillen.
 - Kaarten: haal grenzen en kerncijfers vooraf op via PDOK (`skills/cbs/scripts/pdok_area_geometries.mjs`) en zet ze in de pagina; kaartpagina's kunnen meestal geen gegevens van andere sites ophalen. Zie de skill `cbs`, sectie *Maps of CBS figures*.
+
+---
+
+## 9. Lokale regelgeving (CVDR)
+- Gebruik voor de geldende tekst van verordeningen, de APV en beleidsregels van gemeenten, provincies en waterschappen de skill `lokale-regelgeving` en de MCP-server `lokale-regelgeving` (`lr_zoek_regelingen`, `lr_inhoudsopgave`, `lr_artikel`).
+- API: `https://zoekservice.overheid.nl/sru/Search?x-connection=cvdr&operation=searchRetrieve&version=1.2`. Filter altijd met `overheidrg.datumGeldendOp="JJJJ-MM-DD"`; zonder datum krijg je ook verlopen versies.
+- Vrij zoeken gaat met `overheidrg.keyword`; `cql.textAndIndexes` wordt hier niet ondersteund.
+- Volledige tekst: `https://repository.officiele-overheidspublicaties.nl/cvdr/<werk>/<versie>/xml/<id>.xml`. Haal alleen de artikelen op die nodig zijn.
+
+---
+
+## 10. BAG (adressen en gebouwen)
+- Gebruik voor adressen, gebruiksdoel, oppervlakte, bouwjaar en aantal verblijfsobjecten de skill `bag` en de MCP-server `bag` (`bag_zoek_adres`, `bag_adresinfo`, `bag_pand`).
+- Zoek bij voorkeur exact op postcode + huisnummer via de PDOK Locatieserver (`fq=postcode:..&fq=huisnummer:..`); vrije tekst kan een ander adres als eerste geven, dus controleer het resultaat.
+- Details via de PDOK BAG OGC API: `https://api.pdok.nl/kadaster/bag/ogc/v2/collections/{verblijfsobject|pand}/items?f=json&identificatie=...`.
+- De BAG bevat geen eigenaren of bewoners; koppel BAG-gegevens niet aan personen.
