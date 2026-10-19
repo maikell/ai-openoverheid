@@ -123,3 +123,17 @@ $wc.Headers.Add("Accept", "application/json")
 - **Peildatum:** bevolking is meestal per 1 januari; inkomen loopt vaak een of twee jaar achter. Lees de definitie in `MeasureCodes` (veld `Description`).
 - **Geheimhouding:** kleine aantallen worden afgeschermd (`ValueAttribute`). Vul die nooit zelf in.
 - **Verschil met BBGA:** de Amsterdamse BBGA (skill `amsterdam-kerncijfers`) kan andere definities, peildata en gebiedsgrenzen hebben. Noem altijd de bron per getal.
+
+## 10. Mapping CBS figures (added in 1.7.0)
+
+**Why:** published map pages usually cannot request data from other websites while they are being viewed, so boundaries and figures have to be prepared in advance. This section documents the source and format used by `scripts/pdok_area_geometries.mjs`, so that any assistant (Gemini or Claude) can reproduce it.
+
+**Source:** PDOK OGC API Features, `https://api.pdok.nl/cbs/wijken-en-buurten-2025/ogc/v1`, collections `gemeenten`, `wijken` and `buurten`. Filter with `?gemeentecode=GM0363`, page with the `next` link, coordinates in WGS84 (longitude, latitude). Each feature carries CBS key figures such as `aantal_inwoners`, `percentage_personen_65_jaar_en_ouder`, `percentage_personen_0_tot_15_jaar`, `percentage_eenpersoonshuishoudens` and `aantal_huishoudens`. Percentages are rounded to whole numbers. `-99997` means missing or confidential.
+
+```text
+https://api.pdok.nl/cbs/wijken-en-buurten-2025/ogc/v1/collections/buurten/items?f=json&limit=1000&gemeentecode=GM0363
+```
+
+**Format:** the script simplifies each ring (Douglas-Peucker, default tolerance 0.00012 degrees, about 10 to 15 m) and writes points as integer deltas in units of 1e-5 degree. The decoding snippet is in the script header.
+
+**Size guide:** Stadsdeel Nieuw-West (73 neighbourhoods) is about 20 KB encoded; all of Amsterdam's neighbourhoods are roughly six times that. Raise `--tolerance` for larger areas.

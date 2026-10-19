@@ -85,3 +85,4 @@ Wanneer de gebruiker vragen stelt over Nederlandse open overheidsdata, jurisprud
 - Standaardtabel voor buurtvragen: `86165NED` (Kerncijfers wijken en buurten 2025). Gebiedscodes: `NL00`, `GM0363` (Amsterdam), `WK0363..` (wijk), `BU0363....` (buurt).
 - Filter altijd op maatstaf en/of gebied; volg `@odata.nextLink` bij grote antwoorden (max 100.000 cellen per antwoord).
 - Zet CBS-cijfers en BBGA-cijfers (`amsterdam-kerncijfers`) alleen naast elkaar met de bron per getal; definities en peildata kunnen verschillen.
+- Kaarten: haal grenzen en kerncijfers vooraf op via PDOK (`skills/cbs/scripts/pdok_area_geometries.mjs`) en zet ze in de pagina; kaartpagina's kunnen meestal geen gegevens van andere sites ophalen. Zie de skill `cbs`, sectie *Maps of CBS figures*.

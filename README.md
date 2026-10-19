@@ -37,7 +37,7 @@ The data is Dutch, so skill names and some instructions are in Dutch. Assistants
 | `rechtspraak` | Search and read Dutch court rulings by ECLI. | `data.rechtspraak.nl` |
 | `officiele-bekendmakingen` | Municipal gazettes, Government Gazette, permits and regulations. | KOOP SRU 1.2 |
 | `amsterdam-kerncijfers` | District and neighbourhood statistics (BBGA). | Amsterdam Research & Statistics (O&S) |
-| `cbs` | Statistics for every Dutch municipality, district and neighbourhood (population, income, housing, facilities), to compare areas. Explained in `references/cbs-statline.md`. | CBS StatLine OData v4 (`datasets.cbs.nl`) + MCP server |
+| `cbs` | Statistics for every Dutch municipality, district and neighbourhood (population, income, housing, facilities), to compare areas and draw neighbourhood maps without a map service. Explained in `references/cbs-statline.md`. | CBS StatLine OData v4 (`datasets.cbs.nl`) + MCP server |
 | `raadsinformatie` | Council and district committee meetings, agendas, motions, letters and minutes, with direct PDF links. | NotuBiz API (`amsterdam.raadsinformatie.nl`) + MCP server |
 
 ### MCP tools

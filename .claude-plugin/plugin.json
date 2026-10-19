@@ -1,7 +1,7 @@
 {
   "name": "open-overheid",
-  "version": "1.6.0",
-  "description": "Toolkit for Dutch and Amsterdam open government data: CBS StatLine statistics for every municipality, district and neighbourhood, council meetings and documents (NotuBiz), zoning plans (PDOK/KOOP), court rulings (ECLI), official publications (KOOP SRU), Amsterdam key figures (BBGA), Woo/FOI decisions (open.amsterdam) and the Amsterdam subsidy register. Works with Gemini (Antigravity) and Claude.",
+  "version": "1.7.0",
+  "description": "Toolkit for Dutch and Amsterdam open government data: CBS StatLine statistics and maps for every municipality, district and neighbourhood, council meetings and documents (NotuBiz), zoning plans (PDOK/KOOP), court rulings (ECLI), official publications (KOOP SRU), Amsterdam key figures (BBGA), Woo/FOI decisions (open.amsterdam) and the Amsterdam subsidy register. Works with Gemini (Antigravity) and Claude.",
   "author": {
     "name": "maikell",
     "url": "https://github.com/maikell"
