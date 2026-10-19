@@ -1,10 +1,21 @@
 {
   "name": "open-overheid",
   "version": "1.4.0",
-  "description": "Toolkit voor Nederlandse open overheidsdata: Omgevingsplan (PDOK/KOOP), Rechtspraak (ECLI), Officiele Bekendmakingen (KOOP SRU), Amsterdam Kerncijfers (BBGA), Woo-besluiten (open.amsterdam) en het Openbaar Subsidieregister Amsterdam.",
-  "author": { "name": "maikell", "url": "https://github.com/maikell" },
+  "description": "Toolkit for Dutch and Amsterdam open government data: zoning plans (PDOK/KOOP), court rulings (ECLI), official publications (KOOP SRU), Amsterdam key figures (BBGA), Woo/FOI decisions (open.amsterdam) and the Amsterdam subsidy register. Works with Gemini (Antigravity) and Claude.",
+  "author": {
+    "name": "maikell",
+    "url": "https://github.com/maikell"
+  },
   "homepage": "https://github.com/maikell/ai-openoverheid",
   "repository": "https://github.com/maikell/ai-openoverheid",
   "license": "GPL-3.0",
-  "keywords": ["open data", "overheid", "amsterdam", "woo", "omgevingswet", "rechtspraak", "subsidies"]
+  "keywords": [
+    "open data",
+    "overheid",
+    "amsterdam",
+    "woo",
+    "omgevingswet",
+    "rechtspraak",
+    "subsidies"
+  ]
 }
