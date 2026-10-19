@@ -73,6 +73,15 @@ mcp_config.example.json       MCP-voorbeeldconfiguratie voor Antigravity
 /plugin install open-overheid@open-overheid
 ```
 
+Of vanuit PowerShell of een andere terminal (zonder schuine streep):
+
+```powershell
+claude plugin marketplace add maikell/ai-openoverheid
+claude plugin install open-overheid@open-overheid
+```
+
+Heb je Claude Code nog niet? Installeer het eerst met `irm https://claude.ai/install.ps1 | iex` (Windows PowerShell) of `curl -fsSL https://claude.ai/install.sh | bash` (macOS/Linux), en open een nieuw terminalvenster. Zie de [installatiedocumentatie](https://code.claude.com/docs/en/setup).
+
 Herstart Claude Code daarna. De skills en beide MCP-servers zijn dan actief; `.mcp.json` verwijst met `${CLAUDE_PLUGIN_ROOT}` naar de scripts, dus je hoeft geen paden aan te passen.
 
 **Alleen de skills, zonder plugin:** kopieer de mappen uit `skills/` naar `~/.claude/skills/` (Windows: `%USERPROFILE%\.claude\skills\`), bijvoorbeeld:
