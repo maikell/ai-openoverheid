@@ -2,6 +2,14 @@
 
 All notable changes to the AI Open Overheid Toolkit.
 
+## Unreleased
+
+### Added
+- `docs/architecture-v2.png`: overview diagram of all skills and MCP servers, shown in both READMEs.
+
+### Why
+- The previous diagram showed only five components and Antigravity as the only host. The new one reflects the current state: eight skills, four MCP servers and support for both Gemini (Antigravity) and Claude.
+
 ## 1.7.0
 
 ### Added

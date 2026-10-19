@@ -11,6 +11,8 @@ De toolkit is **AI-agnostisch**. Hij is gebouwd op twee open formaten, zodat dez
 
 Alle bronnen zijn openbaar. Je hebt geen API-sleutels of accounts nodig.
 
+![Overzicht van de toolkit: vier MCP-servers met skills (Raadsinformatie, Woo-besluiten, Subsidieregister, CBS StatLine) en vier REST-skills (Omgevingsplan, Rechtspraak, Officiële Bekendmakingen, Amsterdam Kerncijfers), te gebruiken in Google Antigravity en Claude](docs/architecture-v2.png)
+
 ## ✅ Ondersteunde omgevingen
 
 | Omgeving | Model | Skills | MCP-servers | Installatie |
