@@ -2,11 +2,33 @@
   "mcpServers": {
     "amsterdam-woo": {
       "command": "powershell.exe",
-      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${CLAUDE_PLUGIN_ROOT}/mcp/amsterdam_woo_mcp.ps1"]
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${CLAUDE_PLUGIN_ROOT}/mcp/amsterdam_woo_mcp.ps1"
+      ]
     },
     "amsterdam-subsidies": {
       "command": "powershell.exe",
-      "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${CLAUDE_PLUGIN_ROOT}/mcp/subsidies_mcp.ps1"]
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${CLAUDE_PLUGIN_ROOT}/mcp/subsidies_mcp.ps1"
+      ]
+    },
+    "amsterdam-raadsinformatie": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${CLAUDE_PLUGIN_ROOT}/mcp/raadsinformatie_mcp.ps1"
+      ]
     }
   }
 }

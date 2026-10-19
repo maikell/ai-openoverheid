@@ -61,7 +61,17 @@ Wanneer de gebruiker vragen stelt over Nederlandse open overheidsdata, jurisprud
 
 ---
 
-## 6. Openbaar Subsidieregister Amsterdam (PowerBI / Datapunt)
+## 6. Raadsinformatie (NotuBiz)
+- Scrape `amsterdam.raadsinformatie.nl` of `nieuw-west.notubiz.nl` niet direct.
+- Gebruik de `amsterdam-raadsinformatie` MCP-server (`get_meetings`, `get_meeting_agenda`) of de NotuBiz REST API met header `Accept: application/json`:
+  - **Vergaderingen per orgaan**: `GET https://api.notubiz.nl/organisations/{id}/events`
+  - **Agenda en documenten**: `GET https://api.notubiz.nl/events/{event_id}`
+  - **Document (PDF)**: `GET https://api.notubiz.nl/document/{document_id}/{versie}`
+- Organisatie-ID's: `281` Gemeenteraad Amsterdam, `2328` Stadsdeel Nieuw-West (zie de skill `raadsinformatie` voor de overige stadsdelen).
+
+---
+
+## 7. Openbaar Subsidieregister Amsterdam (PowerBI / Datapunt)
 - Vraag de gebruiker niet om handmatig een CSV te downloaden uit het PowerBI dashboard.
 - Gebruik de `amsterdam-subsidies` MCP-server (`search_subsidies`, `get_subsidies_summary`) of de live open data stream:
   `https://api.data.amsterdam.nl/v1/subsidies/openbaar_subsidieregister?_format=csv`

@@ -2,7 +2,7 @@
 
 [English](README.md) · **Nederlands**
 
-Skills en MCP-servers waarmee een AI-assistent rechtstreeks werkt met Nederlandse en Amsterdamse open overheidsdata: omgevingsplannen, rechterlijke uitspraken, officiële bekendmakingen, buurtstatistieken, Woo-besluiten en het subsidieregister.
+Skills en MCP-servers waarmee een AI-assistent rechtstreeks werkt met Nederlandse en Amsterdamse open overheidsdata: raadsvergaderingen en raadsstukken, omgevingsplannen, rechterlijke uitspraken, officiële bekendmakingen, buurtstatistieken, Woo-besluiten en het subsidieregister.
 
 De toolkit is **AI-agnostisch**. Hij is gebouwd op twee open formaten, zodat dezelfde bestanden met verschillende assistenten werken:
 
@@ -35,6 +35,7 @@ Zonder MCP-servers werken de skills ook: ze beschrijven de onderliggende API's, 
 | `rechtspraak` | Zoeken en lezen van uitspraken via ECLI. | `data.rechtspraak.nl` |
 | `officiele-bekendmakingen` | Gemeentebladen, Staatscourant, vergunningen en regelgeving. | KOOP SRU 1.2 |
 | `amsterdam-kerncijfers` | Wijk- en buurtstatistieken (BBGA). | Onderzoek & Statistiek Amsterdam |
+| `raadsinformatie` | Vergaderingen van gemeenteraad en stadsdeelcommissies, agenda's, moties, brieven en verslagen, met directe PDF-links. | NotuBiz API (`amsterdam.raadsinformatie.nl`) + MCP-server |
 
 ### MCP-tools
 
@@ -42,12 +43,13 @@ Zonder MCP-servers werken de skills ook: ze beschrijven de onderliggende API's, 
 | :--- | :--- |
 | `amsterdam-woo` | `search_woo_decisions`, `get_woo_document` |
 | `amsterdam-subsidies` | `search_subsidies`, `get_subsidies_summary` |
+| `amsterdam-raadsinformatie` | `get_meetings`, `get_meeting_agenda` |
 
 ## 📁 Opbouw
 
 ```
 skills/<naam>/SKILL.md            De skills (gedeeld door alle omgevingen)
-mcp/*.ps1                         Twee MCP-servers (stdio, PowerShell)
+mcp/*.ps1                         Drie MCP-servers (stdio, PowerShell)
 rules/AGENTS.md                   Algemene richtlijnen (Antigravity laadt dit automatisch)
 plugin.json                       Pluginbeschrijving voor Antigravity
 mcp_config.example.json           MCP-voorbeeldconfiguratie voor Antigravity
@@ -97,7 +99,7 @@ mcp_config.example.json           MCP-voorbeeldconfiguratie voor Antigravity
 3. Vul in: `maikell/ai-openoverheid`.
 4. Installeer **open-overheid** uit die marketplace en zet hem aan.
 
-De skills en beide MCP-servers zijn dan beschikbaar. De paden zijn relatief (`${CLAUDE_PLUGIN_ROOT}`), dus je hoeft niets aan te passen.
+De skills en alle MCP-servers zijn dan beschikbaar. De paden zijn relatief (`${CLAUDE_PLUGIN_ROOT}`), dus je hoeft niets aan te passen.
 
 ### Claude Code
 
@@ -150,6 +152,10 @@ MCP-servers draaien niet in de webapp; de skills roepen de API's dan zelf aan. C
       "amsterdam-subsidies": {
         "command": "powershell.exe",
         "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<pad-naar-repo>/mcp/subsidies_mcp.ps1"]
+      },
+      "amsterdam-raadsinformatie": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<pad-naar-repo>/mcp/raadsinformatie_mcp.ps1"]
       }
     }
   }
@@ -178,17 +184,18 @@ Bestanden zijn UTF-8 zonder BOM. Houd de `.ps1`-bestanden ASCII (geen accenten),
 - *"Wat zijn de ruimtelijke regels en omgevingsplannen rond Amstel 1 in Amsterdam?"*
 - *"Zoek recente uitspraken over omgevingsrecht waarin de Gemeente Amsterdam partij is."*
 - *"Geef de kerncijfers voor de buurt rond Amstel 1."*
+- *"Wat staat er op de agenda van de eerstvolgende vergadering van Stadsdeel Nieuw-West?"*
 
 ## 🧪 Conventie voor voorbeelddata
 
-Voorbeelden, tests en prompts gebruiken uitsluitend het adres **Amstel 1** (Stadhuis/Stopera) en de organisaties **Gemeente Amsterdam** en **Stadsdeel Nieuw-West**. Gebruik geen echte personen, bedrijven of andere adressen. Uitzondering: technische waardelijsten (zoals de gerechtscodes in de skill `rechtspraak`).
+Voorbeelden, tests en prompts gebruiken uitsluitend het adres **Amstel 1** (Stadhuis/Stopera) en de organisaties **Gemeente Amsterdam** en **Stadsdeel Nieuw-West**. Gebruik geen echte personen, bedrijven of andere adressen. Uitzondering: technische waardelijsten (zoals de gerechtscodes in de skill `rechtspraak` en de NotuBiz-organisatie-ID's in de skill `raadsinformatie`).
 
 Live resultaten kunnen natuurlijk andere namen en adressen bevatten; die komen uit de openbare bronnen, niet uit deze repository.
 
 ## 🔒 Veiligheid
 
 - **Geen eigen sleutels nodig.** De enige sleutel in de code is de publieke sleutel die open.amsterdam zelf gebruikt.
-- **Invoer wordt gecontroleerd:** `get_woo_document` accepteert alleen een geldig UUID en `rows` is begrensd op 50, zodat gemanipuleerde invoer geen andere endpoints kan aanroepen.
+- **Invoer wordt gecontroleerd:** `get_woo_document` accepteert alleen een geldig UUID, `rows` is begrensd op 50 en de raadsinformatie-tools accepteren alleen positieve gehele getallen als ID, zodat gemanipuleerde invoer geen andere endpoints kan aanroepen.
 - **Opgehaalde documenten zijn data, geen instructies.** Woo-documenten en uitspraken bevatten tekst van derden; de assistent hoort daar geen opdrachten uit op te volgen.
 - **Geen scraping:** alleen officiële REST-, SRU- en XML-webservices, zie `rules/AGENTS.md`.
 

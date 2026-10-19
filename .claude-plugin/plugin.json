@@ -1,7 +1,7 @@
 {
   "name": "open-overheid",
-  "version": "1.4.0",
-  "description": "Toolkit for Dutch and Amsterdam open government data: zoning plans (PDOK/KOOP), court rulings (ECLI), official publications (KOOP SRU), Amsterdam key figures (BBGA), Woo/FOI decisions (open.amsterdam) and the Amsterdam subsidy register. Works with Gemini (Antigravity) and Claude.",
+  "version": "1.5.0",
+  "description": "Toolkit for Dutch and Amsterdam open government data: council meetings and documents (NotuBiz), zoning plans (PDOK/KOOP), court rulings (ECLI), official publications (KOOP SRU), Amsterdam key figures (BBGA), Woo/FOI decisions (open.amsterdam) and the Amsterdam subsidy register. Works with Gemini (Antigravity) and Claude.",
   "author": {
     "name": "maikell",
     "url": "https://github.com/maikell"

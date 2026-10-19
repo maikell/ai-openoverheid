@@ -19,6 +19,16 @@
         "-File",
         "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\subsidies_mcp.ps1"
       ]
+    },
+    "amsterdam-raadsinformatie": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\raadsinformatie_mcp.ps1"
+      ]
     }
   }
 }
