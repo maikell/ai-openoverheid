@@ -1,0 +1,11 @@
+# Lokale configuratie met gebruikersspecifieke paden (maak je eigen kopie van mcp_config.example.json)
+mcp_config.json
+
+# Losse skill-ZIP's voor upload in de Claude-app
+*.zip
+
+# Systeembestanden
+.DS_Store
+Thumbs.db
+desktop.ini
+node_modules/

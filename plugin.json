@@ -1,0 +1,10 @@
+{
+  "name": "open-overheid",
+  "description": "Geïntegreerde juridische, ruimtelijke en financiële toolkit voor de Nederlandse overheid: Omgevingsplan (PDOK/DSO), Rechtspraak (ECLI), Officiële Bekendmakingen (KOOP Open Data SRU), Amsterdam Kerncijfers (BBGA), Open Amsterdam Woo-besluiten (Memorix MCP) en Openbaar Subsidieregister Amsterdam (Live Datapunt MCP).",
+  "version": "1.4.0",
+  "suggestedPrompts": [
+    "Wat zijn de omgevingsplanregels en vergunningen op Amstel 1 Amsterdam?",
+    "Welke subsidies zijn er verleend door de Gemeente Amsterdam in Stadsdeel Nieuw-West?",
+    "Welke Woo-besluiten zijn er onlangs gepubliceerd over handhaving in Amsterdam?"
+  ]
+}
