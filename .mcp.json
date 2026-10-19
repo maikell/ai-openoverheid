@@ -29,6 +29,16 @@
         "-File",
         "${CLAUDE_PLUGIN_ROOT}/mcp/raadsinformatie_mcp.ps1"
       ]
+    },
+    "cbs": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${CLAUDE_PLUGIN_ROOT}/mcp/cbs_mcp.ps1"
+      ]
     }
   }
 }

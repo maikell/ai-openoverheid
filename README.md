@@ -2,7 +2,7 @@
 
 **English** · [Nederlands](README.nl.md)
 
-Skills and MCP servers that let an AI assistant work directly with Dutch and Amsterdam open government data: council meetings and documents, zoning plans, court rulings, official publications, neighbourhood statistics, Woo (Freedom of Information) decisions and the municipal subsidy register.
+Skills and MCP servers that let an AI assistant work directly with Dutch and Amsterdam open government data: national statistics (CBS), council meetings and documents, zoning plans, court rulings, official publications, neighbourhood statistics, Woo (Freedom of Information) decisions and the municipal subsidy register.
 
 The toolkit is **AI-agnostic**. It is built on two open formats, so the same files work with several assistants:
 
@@ -37,6 +37,7 @@ The data is Dutch, so skill names and some instructions are in Dutch. Assistants
 | `rechtspraak` | Search and read Dutch court rulings by ECLI. | `data.rechtspraak.nl` |
 | `officiele-bekendmakingen` | Municipal gazettes, Government Gazette, permits and regulations. | KOOP SRU 1.2 |
 | `amsterdam-kerncijfers` | District and neighbourhood statistics (BBGA). | Amsterdam Research & Statistics (O&S) |
+| `cbs` | Statistics for every Dutch municipality, district and neighbourhood (population, income, housing, facilities), to compare areas. Explained in `references/cbs-statline.md`. | CBS StatLine OData v4 (`datasets.cbs.nl`) + MCP server |
 | `raadsinformatie` | Council and district committee meetings, agendas, motions, letters and minutes, with direct PDF links. | NotuBiz API (`amsterdam.raadsinformatie.nl`) + MCP server |
 
 ### MCP tools
@@ -46,12 +47,13 @@ The data is Dutch, so skill names and some instructions are in Dutch. Assistants
 | `amsterdam-woo` | `search_woo_decisions`, `get_woo_document` |
 | `amsterdam-subsidies` | `search_subsidies`, `get_subsidies_summary` |
 | `amsterdam-raadsinformatie` | `get_meetings`, `get_meeting_agenda` |
+| `cbs` | `cbs_search_tables`, `cbs_get_table_info`, `cbs_find_codes`, `cbs_get_observations` |
 
 ## 📁 Repository layout
 
 ```
 skills/<name>/SKILL.md            The skills (shared by all environments)
-mcp/*.ps1                         Three MCP servers (stdio, PowerShell)
+mcp/*.ps1                         Four MCP servers (stdio, PowerShell)
 rules/AGENTS.md                   General agent guidelines (loaded automatically by Antigravity)
 plugin.json                       Plugin manifest for Antigravity
 mcp_config.example.json           MCP config template for Antigravity
@@ -158,6 +160,10 @@ MCP servers do not run in the web app; the skills fall back to calling the APIs 
       "amsterdam-raadsinformatie": {
         "command": "powershell.exe",
         "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<path-to-repo>/mcp/raadsinformatie_mcp.ps1"]
+      },
+      "cbs": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<path-to-repo>/mcp/cbs_mcp.ps1"]
       }
     }
   }
@@ -187,10 +193,11 @@ Files are UTF-8 without BOM. Keep the `.ps1` files ASCII (no accented characters
 - *"Find recent rulings on environmental law in which the Gemeente Amsterdam is a party."*
 - *"Give me the key figures for the neighbourhood around Amstel 1."*
 - *"What is on the agenda of the next Stadsdeel Nieuw-West committee meeting?"*
+- *"Compare the share of residents aged 65+ in Osdorp with Amsterdam as a whole (CBS)."*
 
 ## 🧪 Example data convention
 
-Examples, tests and prompts use only the address **Amstel 1** (City Hall / Stopera) and the organisations **Gemeente Amsterdam** and **Stadsdeel Nieuw-West**. Do not use real people, companies or other addresses. Exception: technical value lists (such as the court codes in the `rechtspraak` skill and the NotuBiz organisation IDs in the `raadsinformatie` skill).
+Examples, tests and prompts use only the address **Amstel 1** (City Hall / Stopera) and the organisations **Gemeente Amsterdam** and **Stadsdeel Nieuw-West**. Do not use real people, companies or other addresses. Exception: technical value lists (such as the court codes in the `rechtspraak` skill, the NotuBiz organisation IDs in the `raadsinformatie` skill and the CBS area codes in the `cbs` skill).
 
 Live results can of course contain other names and addresses; those come from the public sources, not from this repository.
 

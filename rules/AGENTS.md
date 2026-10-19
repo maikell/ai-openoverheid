@@ -76,3 +76,12 @@ Wanneer de gebruiker vragen stelt over Nederlandse open overheidsdata, jurisprud
 - Gebruik de `amsterdam-subsidies` MCP-server (`search_subsidies`, `get_subsidies_summary`) of de live open data stream:
   `https://api.data.amsterdam.nl/v1/subsidies/openbaar_subsidieregister?_format=csv`
 - Bevat alle verleende subsidies, dossiers, aanvragers, bedragen en clusters.
+
+---
+
+## 8. CBS StatLine (landelijke statistiek)
+- Gebruik voor cijfers over gemeenten, wijken en buurten in heel Nederland de skill `cbs` en de `cbs` MCP-server (`cbs_search_tables`, `cbs_get_table_info`, `cbs_find_codes`, `cbs_get_observations`).
+- API: `https://datasets.cbs.nl/odata/v1` (OData v4), geen sleutel, licentie CC BY 4.0; vermeld "Bron: CBS".
+- Standaardtabel voor buurtvragen: `86165NED` (Kerncijfers wijken en buurten 2025). Gebiedscodes: `NL00`, `GM0363` (Amsterdam), `WK0363..` (wijk), `BU0363....` (buurt).
+- Filter altijd op maatstaf en/of gebied; volg `@odata.nextLink` bij grote antwoorden (max 100.000 cellen per antwoord).
+- Zet CBS-cijfers en BBGA-cijfers (`amsterdam-kerncijfers`) alleen naast elkaar met de bron per getal; definities en peildata kunnen verschillen.
