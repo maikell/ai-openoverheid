@@ -9,7 +9,8 @@
     {
       "name": "open-overheid",
       "source": "./",
-      "description": "Skills and MCP servers for Dutch and Amsterdam open government data."
+      "description": "Skills and MCP servers for Dutch and Amsterdam open government data.",
+      "version": "1.5.0"
     }
   ]
 }
