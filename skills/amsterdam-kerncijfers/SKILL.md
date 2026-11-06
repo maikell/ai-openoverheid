@@ -75,6 +75,8 @@ Then:
 
 A ready-made client is in `scripts/amsterdam_kerncijfers.mjs` (Node.js 18+); see its `--help`.
 
+Indicator file names are case-sensitive: `BEVTOTAAL.json` works, `bevtotaal.json` returns a 404. Take the exact code from the `name` field in `indicators.json`; the script does this for you and also matches area codes regardless of case.
+
 ---
 
 ## Direct fetch example (PowerShell)
@@ -90,3 +92,4 @@ $item
 - Name the indicator label, the area name and code, the year and the unit.
 - State the source: "Gemeente Amsterdam, Onderzoek & Statistiek (BBGA)".
 - Use the `definition` field when a figure could be misread (for example a percentage of households versus of residents).
+- About 140 indicators have `deprecated: true`. Prefer a current indicator; if you do use a deprecated one, say so and give `deprecatedReason`, which often names the replacement. The script's `--search` lists deprecated indicators last, marked `[VERVALLEN]`.

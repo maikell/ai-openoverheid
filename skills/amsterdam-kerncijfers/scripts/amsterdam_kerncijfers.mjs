@@ -16,7 +16,7 @@ export async function fetchJson(endpoint) {
   const url = endpoint.startsWith('http') ? endpoint : `${BASE_API}${endpoint}`;
   const res = await fetch(url, {
     headers: {
-      'User-Agent': 'Antigravity-Agent/1.0 (Amsterdam Kerncijfers Client)',
+      'User-Agent': 'ai-openoverheid/1.9.1 (Amsterdam Kerncijfers Client; +https://github.com/maikell/ai-openoverheid)',
       'Accept': 'application/json'
     }
   });
@@ -97,22 +97,39 @@ export async function resolveKerncijfers(options = {}) {
     throw new Error('Indicator name/code is required (e.g. BEVTOTAAL)');
   }
 
-  const [allIndicators, allAreas, data] = await Promise.all([
+  const [allIndicators, allAreas] = await Promise.all([
     getIndicators(),
-    getAreas(),
-    getIndicatorData(indicator)
+    getAreas()
   ]);
 
+  // The API file names are case-sensitive (BEVTOTAAL.json works, bevtotaal.json is a 404),
+  // so resolve the exact code from the metadata before fetching the data.
+  const wanted = indicator.toUpperCase();
   const indicatorMeta = allIndicators.find(
-    i => (i.name && i.name.toUpperCase() === indicator.toUpperCase()) ||
-         (i.indicator && i.indicator.toUpperCase() === indicator.toUpperCase())
+    i => (i.name && i.name.toUpperCase() === wanted) ||
+         (i.indicator && i.indicator.toUpperCase() === wanted)
   ) || null;
 
-  const areaMeta = areaCode ? (allAreas[areaCode] || Object.values(allAreas).find(a => a.code === areaCode)) : null;
+  if (!indicatorMeta) {
+    throw new Error(`Indicator "${indicator}" not found in indicators.json. Use --search <term> to find the right code.`);
+  }
+  indicator = indicatorMeta.name || indicatorMeta.indicator;
+
+  const data = await getIndicatorData(indicator);
+
+  // Area codes are matched case-insensitively too (f -> F, ga01 -> GA01).
+  let areaMeta = null;
+  if (areaCode) {
+    areaMeta = allAreas[areaCode] ||
+      Object.values(allAreas).find(a => a.code && a.code.toUpperCase() === areaCode.toUpperCase()) ||
+      null;
+    if (areaMeta) areaCode = areaMeta.code;
+  }
 
   let records = data;
   if (areaCode) {
-    records = records.filter(r => r.areaCode === areaCode);
+    const code = areaCode.toUpperCase();
+    records = records.filter(r => r.areaCode && r.areaCode.toUpperCase() === code);
   }
   if (year) {
     records = records.filter(r => r.year === year);
@@ -174,9 +191,13 @@ Voorbeelden:
       (i.definition && i.definition.toLowerCase().includes(term))
     );
     console.log(`Gevonden indicatoren voor "${search}" (${matches.length}):`);
+    // Current indicators first, deprecated ones last and marked
+    matches.sort((a, b) => Number(!!a.deprecated) - Number(!!b.deprecated));
     matches.slice(0, 20).forEach(m => {
-      console.log(`- ${m.name}: ${m.label} (${m.themes?.join(', ')}) [eenheid: ${m.unit || 'n.v.t.'}]`);
+      const flag = m.deprecated ? ' [VERVALLEN' + (m.deprecatedDate ? ' ' + m.deprecatedDate : '') + ']' : '';
+      console.log(`- ${m.name}: ${m.label} (${m.themes?.join(', ')}) [eenheid: ${m.unit || 'n.v.t.'}]${flag}`);
     });
+    if (matches.length > 20) console.log(`... en ${matches.length - 20} meer. Verfijn de zoekterm.`);
     return;
   }
 
@@ -200,12 +221,15 @@ function printResult(res) {
     console.log(`Eenheid:   ${res.indicatorMeta.unit || 'n.v.t.'} (decimalen: ${res.indicatorMeta.decimals})`);
     console.log(`Bron:      ${res.indicatorMeta.source || 'n.v.t.'}`);
     console.log(`Definitie: ${res.indicatorMeta.definition}`);
+    if (res.indicatorMeta.deprecated) {
+      console.log(`LET OP:    deze indicator is vervallen${res.indicatorMeta.deprecatedDate ? ' (' + res.indicatorMeta.deprecatedDate + ')' : ''}${res.indicatorMeta.deprecatedReason ? ': ' + res.indicatorMeta.deprecatedReason : ''}`);
+    }
   }
 
   if (res.areaMeta) {
     console.log(`\nGebied:    ${res.areaMeta.naam} (${res.areaMeta.code})`);
     console.log(`Type:      ${res.areaMeta.label || res.areaMeta.type}`);
-    console.log(`Stadsdeel: ${res.areaMeta.stadsdeelNaam || 'n.v.t.'}`);
+    if (res.areaMeta.stadsdeelNaam) console.log(`Stadsdeel: ${res.areaMeta.stadsdeelNaam} (${res.areaMeta.stadsdeelCode})`);
   }
 
   console.log(`\nResultaten (${res.records.length} records):`);

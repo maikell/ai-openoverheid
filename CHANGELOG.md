@@ -2,6 +2,18 @@
 
 All notable changes to the AI Open Overheid Toolkit.
 
+## 1.9.1 – 2026-11-06
+
+### Fixed
+- **`amsterdam-kerncijfers` script: indicator and area codes are no longer case-sensitive.** `--indicator bevtotaal --gebied f` now returns the same as `BEVTOTAAL` / `F`. The exact code is resolved from `indicators.json` before the data is fetched.
+  - *Why:* the API's file names are case-sensitive, so a lowercase code gave a bare `404 Not Found` while the metadata lookup in the same script already ignored case.
+- **Clear error for an unknown indicator**, pointing to `--search`, instead of `API error 404`.
+- **Deprecated indicators are marked.** `--search` lists them last with `[VERVALLEN <date>]`, and a lookup prints the reason (`deprecatedReason`), which usually names the replacement. `SKILL.md` tells the assistant to prefer current indicators.
+  - *Why:* 143 of the 1,081 indicators are deprecated and were shown without any warning, so old figures could be presented as current.
+
+### Changed
+- `amsterdam-kerncijfers` script: the User-Agent names the toolkit (`ai-openoverheid/1.9.1`) instead of `Antigravity-Agent/1.0`, and the `Stadsdeel:` line is only shown for areas that belong to a district, with its code.
+
 ## 1.9.0 – 2026-11-06
 
 ### Added
