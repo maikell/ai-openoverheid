@@ -11,7 +11,7 @@ The toolkit is **AI-agnostic**. It is built on two open formats, so the same fil
 
 All sources are public. No API keys or accounts are required.
 
-![Overview of the toolkit: four MCP servers with skills (Raadsinformatie, Woo-besluiten, Subsidieregister, CBS StatLine) and four REST skills (Omgevingsplan, Rechtspraak, Officiële Bekendmakingen, Amsterdam Kerncijfers), usable in Google Antigravity and Claude](docs/architecture-v2.png)
+![Overview of the toolkit: six MCP servers with skills (Raadsinformatie with archive_meeting for Amsterdam and Stadsdeel Nieuw-West, Woo-besluiten, Subsidieregister, CBS StatLine, Lokale regelgeving, BAG) and four REST skills (Omgevingsplan, Rechtspraak, Officiële Bekendmakingen, Amsterdam Kerncijfers), usable in Google Antigravity and Claude](docs/architecture-v2.png)
 
 ## ✅ Supported environments
 
@@ -43,6 +43,7 @@ The data is Dutch, so skill names and some instructions are in Dutch. Assistants
 | `amsterdam-kerncijfers` | District and neighbourhood statistics (BBGA). | Amsterdam Research & Statistics (O&S) |
 | `cbs` | Statistics for every Dutch municipality, district and neighbourhood (population, income, housing, facilities), to compare areas and draw neighbourhood maps without a map service. Explained in `references/cbs-statline.md`. | CBS StatLine OData v4 (`datasets.cbs.nl`) + MCP server |
 | `raadsinformatie` | Council and district committee meetings, agendas, motions, letters and minutes, with direct PDF links. | NotuBiz API (`amsterdam.raadsinformatie.nl`) + MCP server |
+| `amsterdam-notubiz` | Download and archive the agenda and all documents of one meeting into a local folder, verified by SHA-256, with version numbers for changed documents and a README per meeting. | NotuBiz API + PowerShell script + MCP tool `archive_meeting` |
 
 ### MCP tools
 
@@ -50,7 +51,7 @@ The data is Dutch, so skill names and some instructions are in Dutch. Assistants
 | :--- | :--- |
 | `amsterdam-woo` | `search_woo_decisions`, `get_woo_document` |
 | `amsterdam-subsidies` | `search_subsidies`, `get_subsidies_summary` |
-| `amsterdam-raadsinformatie` | `get_meetings`, `get_meeting_agenda` |
+| `amsterdam-raadsinformatie` | `get_meetings`, `get_meeting_agenda`, `archive_meeting` |
 | `cbs` | `cbs_search_tables`, `cbs_get_table_info`, `cbs_find_codes`, `cbs_get_observations` |
 | `lokale-regelgeving` | `lr_zoek_regelingen`, `lr_inhoudsopgave`, `lr_artikel` |
 | `bag` | `bag_zoek_adres`, `bag_adresinfo`, `bag_pand` |

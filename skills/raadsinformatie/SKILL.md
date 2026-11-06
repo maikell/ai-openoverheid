@@ -97,6 +97,8 @@ Document URLs in the agenda have the form `https://api.notubiz.nl/document/{docu
 
 The `amsterdam-raadsinformatie` MCP server offers `get_meetings` (by organisation ID, default 281) and `get_meeting_agenda` (by event ID). Both accept positive integers only.
 
+To download and archive all documents of a meeting into a local folder, use `archive_meeting` from the same server; see the `amsterdam-notubiz` skill.
+
 ## Presenting results
 
 - Give the body, date and time, the meeting title and the link to the meeting page.

@@ -1,0 +1,131 @@
+<!doctype html>
+<!-- Source of docs/architecture-v2.png. Render at 2000x1250 CSS px with device scale factor 1.2 (2400x1500 PNG). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Toolkit overview</title>
+<style>
+  @font-face { font-family: Plex; font-weight: 400; src: url(fonts/ibm-plex-sans-latin-400-normal.woff2); }
+  @font-face { font-family: Plex; font-weight: 500; src: url(fonts/ibm-plex-sans-latin-500-normal.woff2); }
+  @font-face { font-family: Plex; font-weight: 600; src: url(fonts/ibm-plex-sans-latin-600-normal.woff2); }
+  @font-face { font-family: Plex; font-weight: 700; src: url(fonts/ibm-plex-sans-latin-700-normal.woff2); }
+  @font-face { font-family: PlexMono; font-weight: 400; src: url(fonts/ibm-plex-mono-latin-400-normal.woff2); }
+  :root { --ink: #16202e; --muted: #4a5564; --soft: #6b7480; --bg: #f4f6f8; --line: #dfe3e8;
+          --green: #127a68; --blue: #2e5fb3; --amber-bg: #fbf1d9; --amber: #8a6312; }
+  * { box-sizing: border-box; margin: 0; }
+  body { width: 2000px; height: 1250px; background: var(--bg); font-family: Plex, sans-serif; color: var(--ink); padding: 72px 80px 0; position: relative; }
+  .eyebrow { font-family: PlexMono, monospace; font-size: 19px; letter-spacing: .16em; color: var(--muted); }
+  h1 { font-size: 72px; font-weight: 700; letter-spacing: -.01em; margin-top: 14px; }
+  .sub { font-size: 30px; color: var(--muted); margin-top: 12px; }
+  .badges { position: absolute; right: 80px; top: 154px; display: flex; gap: 14px; }
+  .pill { font-size: 19px; font-weight: 600; padding: 11px 18px; border-radius: 999px; }
+  .pill.g { background: var(--green); color: #fff; }
+  .pill.o { border: 2px solid var(--blue); color: var(--blue); background: #fff; padding: 9px 16px; }
+  .repo { position: absolute; right: 80px; top: 210px; font-family: PlexMono, monospace; font-size: 18px; color: var(--muted); }
+  .hosts { margin-top: 34px; background: #fff; border: 1px solid var(--line); border-radius: 14px; display: grid; grid-template-columns: repeat(4, 1fr); padding: 20px 26px; }
+  .hosts div { padding-left: 20px; border-left: 1px solid var(--line); }
+  .hosts div:first-child { border: 0; padding-left: 0; }
+  .hosts b { font-size: 22px; font-weight: 600; display: block; }
+  .hosts span { font-size: 17px; color: var(--muted); }
+  .sec { display: flex; align-items: center; gap: 12px; margin: 34px 0 20px; font-size: 20px; }
+  .sec i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+  .sec b { font-weight: 600; } .sec span { color: var(--muted); }
+  .row { display: grid; gap: 18px; }
+  .row.six { grid-template-columns: repeat(6, 1fr); }
+  .row.four { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .card { background: #fff; border: 1px solid var(--line); border-top: 5px solid var(--green); border-radius: 12px; padding: 22px 20px; position: relative; }
+  .six .card { height: 310px; }
+  .four .card { border-top-color: var(--blue); height: 208px; padding: 26px 26px; }
+  .hd { display: flex; gap: 12px; align-items: flex-start; }
+  .hd svg { flex: none; width: 30px; height: 30px; margin-top: 14px; stroke: var(--ink); fill: none; stroke-width: 1.6; }
+  .four .hd svg { width: 36px; height: 36px; margin-top: 10px; }
+  .t { font-size: 23px; font-weight: 600; line-height: 1.15; }
+  .four .t { font-size: 27px; }
+  .s { font-size: 16px; color: var(--muted); line-height: 1.3; margin-top: 2px; }
+  .four .s { font-size: 18px; }
+  .d { font-size: 16px; line-height: 1.45; margin-top: 14px; }
+  .four .d { font-size: 18px; margin-top: 16px; }
+  .d b { font-weight: 600; }
+  .x { font-size: 18px; color: var(--muted); margin-top: 14px; line-height: 1.4; }
+  .tools { font-family: PlexMono, monospace; font-size: 15.5px; color: var(--green); line-height: 1.55; margin-top: 14px; }
+  .tools .n { background: var(--amber-bg); color: var(--amber); font-family: Plex; font-weight: 600; font-size: 11px; letter-spacing: .1em; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: 2px; }
+  .new { position: absolute; top: 18px; right: 16px; background: var(--amber-bg); color: var(--amber); font-weight: 600; font-size: 13px; letter-spacing: .12em; padding: 4px 9px; border-radius: 5px; }
+  .note { font-size: 14.5px; color: var(--soft); margin-top: 8px; line-height: 1.35; }
+  footer { position: absolute; left: 80px; right: 80px; bottom: 50px; border-top: 1px solid var(--line); padding-top: 22px; display: flex; gap: 36px; font-size: 19px; color: var(--muted); }
+  footer .r { margin-left: auto; font-family: PlexMono, monospace; font-size: 18px; }
+</style>
+</head>
+<body>
+  <div class="eyebrow">OVERVIEW · TOOLKIT 1.9.0 · NOVEMBER 2026</div>
+  <h1>Dutch Gov AI Toolkit &amp; MCP Architecture</h1>
+  <div class="sub">Skills and MCP servers for Dutch open government data, for Gemini and Claude</div>
+  <div class="badges"><span class="pill g">6 MCP servers</span><span class="pill o">11 skills</span></div>
+  <div class="repo">github.com/maikell/ai-openoverheid</div>
+
+  <div class="hosts">
+    <div><b>Google Antigravity</b><span>Gemini · skills + MCP servers</span></div>
+    <div><b>Claude Desktop</b><span>Plugin marketplace · skills + MCP servers</span></div>
+    <div><b>Claude Code</b><span>/plugin install · skills + MCP servers</span></div>
+    <div><b>Claude on the web</b><span>ZIP upload · skills call the APIs directly</span></div>
+  </div>
+
+  <div class="sec"><i style="background:var(--green)"></i><b>MCP server + skill</b><span>stdio JSON-RPC · PowerShell · validated input</span></div>
+  <div class="row six">
+    <div class="card">
+      <div class="hd"><svg viewBox="0 0 24 24"><path d="M3 9.5 12 4l9 5.5M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/></svg>
+        <div><div class="t">Raadsinformatie</div><div class="s">Amsterdam &amp; Stadsdeel Nieuw-West</div></div></div>
+      <div class="d"><b>Data</b> NotuBiz API, Amsterdam + Nieuw-West</div>
+      <div class="tools">get_meetings<br>get_meeting_agenda<br>archive_meeting<span class="n">NEW</span></div>
+      <div class="note">Archives all stukken · SHA-256 · versions</div>
+    </div>
+    <div class="card">
+      <div class="hd"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h3"/><circle cx="16" cy="17" r="2.2"/></svg>
+        <div><div class="t">Woo-besluiten</div><div class="s">Released FOI decisions</div></div></div>
+      <div class="d"><b>Data</b> Memorix Mediabank (open.amsterdam)</div>
+      <div class="tools">search_woo_decisions<br>get_woo_document</div>
+    </div>
+    <div class="card">
+      <div class="hd"><svg viewBox="0 0 24 24"><ellipse cx="10" cy="6" rx="6" ry="2.5"/><path d="M4 6v4c0 1.4 2.7 2.5 6 2.5M4 10v4c0 1.4 2.7 2.5 6 2.5"/><circle cx="17" cy="16" r="3.5"/><path d="M17 14.5v3"/></svg>
+        <div><div class="t">Subsidieregister</div><div class="s">Amsterdam public subsidy register</div></div></div>
+      <div class="d"><b>Data</b> Datapunt Amsterdam (live CSV, 12 h cache)</div>
+      <div class="tools">search_subsidies<br>get_subsidies_summary</div>
+    </div>
+    <div class="card">
+      <div class="hd"><svg viewBox="0 0 24 24"><path d="M4 20h16M6 20v-6M10 20V9M14 20v-8M18 20V5M5 12l4-4 4 3 5-6"/></svg>
+        <div><div class="t">CBS StatLine</div><div class="s">National statistics &amp; area maps</div></div></div>
+      <div class="d"><b>Data</b> CBS OData v4 + PDOK boundaries</div>
+      <div class="tools">cbs_search_tables<br>cbs_get_table_info<br>cbs_find_codes<br>cbs_get_observations</div>
+    </div>
+    <div class="card">
+      <div class="hd"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="1.5"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
+        <div><div class="t">Lokale regelgeving</div><div class="s">Local rules in force (APV)</div></div></div>
+      <div class="d"><b>Data</b> CVDR via KOOP SRU</div>
+      <div class="tools">lr_zoek_regelingen<br>lr_inhoudsopgave<br>lr_artikel</div>
+    </div>
+    <div class="card">
+      <div class="hd"><svg viewBox="0 0 24 24"><path d="M4 21V8l6-4v17M10 21h10V10h-10M13 13h1M17 13h1M13 17h1M17 17h1M6.5 10h1M6.5 14h1M6.5 18h1"/></svg>
+        <div><div class="t">BAG</div><div class="s">Addresses &amp; buildings</div></div></div>
+      <div class="d"><b>Data</b> PDOK Locatieserver + BAG API</div>
+      <div class="tools">bag_zoek_adres<br>bag_adresinfo<br>bag_pand</div>
+    </div>
+  </div>
+
+  <div class="sec"><i style="background:var(--blue)"></i><b>REST skill</b><span>the assistant calls the official API directly · no scraping</span></div>
+  <div class="row four">
+    <div class="card"><div class="hd"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+      <div><div class="t">Omgevingsplan</div><div class="s">Spatial planning</div></div></div>
+      <div class="d"><b>Data</b> PDOK Locatieserver &amp; KOOP SRU</div><div class="x">Geocoding RD/WGS84, Omgevingswet plans, BOPA</div></div>
+    <div class="card"><div class="hd"><svg viewBox="0 0 24 24"><path d="M12 4v16M7 20h10M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/></svg>
+      <div><div class="t">Rechtspraak</div><div class="s">Case law</div></div></div>
+      <div class="d"><b>Data</b> data.rechtspraak.nl (REST XML)</div><div class="x">ECLI court rulings, administrative law</div></div>
+    <div class="card"><div class="hd"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 11h6M9 15h4"/><circle cx="16" cy="18" r="1.8"/></svg>
+      <div><div class="t">Officiële Bekendmakingen</div><div class="s">Laws &amp; regulations</div></div></div>
+      <div class="d"><b>Data</b> KOOP Open Data SRU 1.2</div><div class="x">Gemeenteblad, Staatscourant, permits</div></div>
+    <div class="card"><div class="hd"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 4v16M4 12h16"/></svg>
+      <div><div class="t">Amsterdam Kerncijfers</div><div class="s">BBGA open data</div></div></div>
+      <div class="d"><b>Data</b> Onderzoek &amp; Statistiek Amsterdam</div><div class="x">Demographics, neighbourhood indicators, areas API</div></div>
+  </div>
+
+  <footer><span>Open data only · no API keys</span><span>Input validation on every MCP tool</span><span>SKILL.md + MCP: one repo for every assistant</span><span class="r">GPL-3.0 · data CC BY 4.0 (CBS)</span></footer>
+</body>
+</html>

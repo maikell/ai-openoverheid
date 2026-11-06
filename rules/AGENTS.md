@@ -67,6 +67,7 @@ Wanneer de gebruiker vragen stelt over Nederlandse open overheidsdata, jurisprud
   - **Vergaderingen per orgaan**: `GET https://api.notubiz.nl/organisations/{id}/events`
   - **Agenda en documenten**: `GET https://api.notubiz.nl/events/{event_id}`
   - **Document (PDF)**: `GET https://api.notubiz.nl/document/{document_id}/{versie}`
+- Alle stukken van een vergadering downloaden en archiveren (met SHA-256-controle en versienummers): skill `amsterdam-notubiz`; MCP-tool `archive_meeting` (server `amsterdam-raadsinformatie`) of het script `skills/amsterdam-notubiz/scripts/archive_meeting.ps1`.
 - Organisatie-ID's: `281` Gemeenteraad Amsterdam, `2328` Stadsdeel Nieuw-West (zie de skill `raadsinformatie` voor de overige stadsdelen).
 
 ---

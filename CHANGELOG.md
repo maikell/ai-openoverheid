@@ -2,6 +2,15 @@
 
 All notable changes to the AI Open Overheid Toolkit.
 
+## 1.9.0 – 2026-11-06
+
+### Added
+- **`amsterdam-notubiz` skill** with `skills/amsterdam-notubiz/scripts/archive_meeting.ps1`: downloads the agenda and all documents of one NotuBiz meeting (city council, committees, college van B&W, district committees) into a local folder per meeting. Every file is checked by SHA-256; unchanged files are skipped, changed files are filed as `Name (v2)`, `(v3)`, … and the original is never overwritten. Each folder gets a `README.md` (files, sizes, hashes, change log) and a `manifest.json`.
+- **MCP tool `archive_meeting`** in the `amsterdam-raadsinformatie` server, which runs the same script. Arguments: `event_id` or `organisation_id` (+ optional `category`), optional absolute `root` or `target_dir`, and `dry_run`. The default folder can be set with the environment variable `OPEN_OVERHEID_ARCHIVE_ROOT`. IDs must be positive integers, paths absolute without `..`.
+- **`docs/architecture-v2.png` updated** for 1.9.0 (11 skills, `archive_meeting`, NotuBiz for Amsterdam and Stadsdeel Nieuw-West), with its HTML source `docs/architecture-v2.html` so it can be regenerated.
+  - *Why (tool):* in Claude Desktop the assistant has no terminal on the user's computer, but the MCP servers do run there. The tool makes archiving work the same way in Claude Desktop, Claude Code and Antigravity.
+  - *Why:* the `raadsinformatie` skill finds meetings and links, but following a committee over time needs the documents themselves, filed consistently and with proof of what changed between runs. The agenda is written as Markdown from the API instead of the website's PDF export, because every PDF export gets new timestamps and therefore a new hash even when nothing changed.
+
 ## 1.8.0 – 2026-10-20
 
 ### Added
