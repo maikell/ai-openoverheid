@@ -2,6 +2,22 @@
 
 All notable changes to the AI Open Overheid Toolkit.
 
+## 1.10.2 – 2026-11-17
+
+### Fixed
+- **Motions of the stadsdelen were read incompletely.** Every organisation configured the NotuBiz motions module itself; the tools only knew the Gemeenteraad's field names. Now also read: submitters from `Initiatiefnemer`, parties from `Betrokken partijen`, `Fractie(s)` and `Partij(en)`, dates from `Datum motie`, `Datum vergadering` and `dd-mm-yyyy` dates, the type from `Type document` or the title, and the outcome from `Toelichting` when `Uitslag` is empty.
+  - *Why:* tested against the live data of all organisations, the stadsdelen showed no submitters or parties, and Stadsdeel West, which writes the vote into the outcome field ("Aangenomen, tegen VVD"), showed no votes.
+- **Outcome normalisation** handles typos ("AAngenomen", "Aangeneomen"), "unaniem aangenomen", "staking van stemmen" and "uitgesteld"; type variants like "Motie " and "Motie-" are merged.
+- **Advice and proposals** that Zuid and Oost keep in the same module are left out of motion counts unless `alle_typen: true`.
+- **Toelichting is only used as vote text when it is one.** In Zuidoost it often holds only a date and number.
+
+### Added
+- **Votes per party.** Each motion now has `unaniem`, `tegen` and `voor`, read from the vote text by pattern ("met de stemmen tegen van ...", "met de stemmen voor van ... is verworpen", "Aangenomen, tegen: ..."). `motions_search` filters on `stemde_tegen` and `stemde_voor` and counts with `summary_by: tegenstemmers` or `voorstemmers`. On the Gemeenteraad since 2025 this gives vote detail for 669 of 802 motions; the rest are mostly withdrawn motions without a vote.
+  - *Why:* "stemuitslagen volgen" was the point of the feature, but until now the vote was only available as free text.
+- **`docs/skills.png`** (source `docs/skills.html`): an infographic in Dutch with, per skill, what it does, how it works in three steps and where the data comes from; `docs/features.png` now says 1.10.2. Both READMEs show it under the features overview.
+  - *Why:* the features overview says what you can ask, not how each skill gets its answer; that is what users ask when a result surprises them.
+- **Faster sync:** 4 pages of 250 are fetched in parallel (the Gemeenteraad's 10,247 items in about 4 minutes instead of 15), and the default time budget per call is 20 seconds so a call stays within the usual 60-second MCP client timeout. A cache from 1.10.0/1.10.1 is rebuilt automatically on the next sync.
+
 ## 1.10.1 – 2026-11-17
 
 ### Changed

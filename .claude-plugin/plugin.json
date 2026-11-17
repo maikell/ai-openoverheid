@@ -1,6 +1,6 @@
 {
   "name": "open-overheid",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "description": "Toolkit for Dutch and Amsterdam open government data: addresses and buildings (BAG), local regulations in force (CVDR, e.g. the APV), CBS StatLine statistics and maps for every municipality, district and neighbourhood, council meetings and documents (NotuBiz) with a local search index across years and motion tracking, zoning plans at an address (PDOK/KOOP), court rulings (ECLI), official publications (KOOP SRU), Amsterdam key figures (BBGA), Woo/FOI decisions (open.amsterdam) and the Amsterdam subsidy register, combined into an address dossier on request. Works with Gemini (Antigravity) and Claude.",
   "author": {
     "name": "maikell",

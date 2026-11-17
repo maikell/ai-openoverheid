@@ -15,6 +15,8 @@ All sources are public. No API keys or accounts are required.
 
 ![What the toolkit can do, by theme: address and neighbourhood, space and rules, council and district, council archive across years, transparency and money, law and maintenance](docs/features.png)
 
+![How each skill works: what it does, the steps it takes and where the data comes from, for all 13 skills](docs/skills.png)
+
 ## ✅ Supported environments
 
 | Environment | Model | Skills | MCP servers | Install |

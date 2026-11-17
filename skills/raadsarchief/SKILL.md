@@ -23,8 +23,8 @@ Everything is stored under the archive folder, in `_index/`. Default archive fol
 |---|---|
 | `archive_index` | Build or refresh the index. Incremental (only new or changed files). Stops after `max_seconds` (default 45) and says what is left: call again until `complete` is true. |
 | `archive_search` | Search. `mode`: `documents` (hits with snippet and page), `first` (first mention, oldest meeting first), `timeline` (documents and meetings per year or month). Filters: `organisation` (name part or NotuBiz id), `body`, `date_from`, `date_to` (yyyy, yyyy-mm or yyyy-mm-dd), `doc_type`. |
-| `motions_sync` | Download or refresh the motion cache for one organisation. First run for the Gemeenteraad (about 10,000 items since 2013) takes several calls; later runs only fetch new items and re-read the most recent 500, because outcomes are often filled in later. |
-| `motions_search` | Search the motion cache: `query`, `fractie`, `indiener`, `uitslag`, `type`, dates; `summary_by` = `uitslag`, `fractie`, `indiener` or `jaar` gives counts of submitted, adopted, rejected and withdrawn. |
+| `motions_sync` | Download or refresh the motion cache for one organisation. Each call stops after `max_seconds` (default 20, because MCP clients usually stop waiting after 60 s) and fetches 4 pages of 250 in parallel. First run for the Gemeenteraad (about 10,000 items since 2013) takes about 6 calls; later runs only fetch new items and re-read the most recent 500, because outcomes are often filled in later. |
+| `motions_search` | Search the motion cache: `query`, `fractie` (submitting party), `indiener`, `uitslag`, `type`, dates, `stemde_tegen` / `stemde_voor` (how parties voted). `summary_by` = `uitslag`, `fractie`, `indiener`, `jaar`, `tegenstemmers` or `voorstemmers` gives counts of adopted, rejected and withdrawn. Only motions and amendments, unless `alle_typen: true`. |
 
 Query syntax (both search tools): all words must occur, matched as part of a word and case-insensitive (`afval` also finds `afvalinzameling`); `"exact phrase"`; `-word` excludes.
 
@@ -49,7 +49,28 @@ Query syntax (both search tools): all words must occur, matched as part of a wor
    - what happened to them: `summary_by: "uitslag"`
    - adoption rate per party: `summary_by: "fractie"` (a motion with several parties counts for each party)
    - one party or member: `fractie: "<party name>"` or `indiener: "<member name>"`.
-4. **Votes.** The field `stemming` holds the vote text as NotuBiz registered it (e.g. "met de stemmen tegen van <party A> en <party B> is aangenomen", or "met algemene stemmen aangenomen"). It is often empty for older items and for stadsdelen. Do not guess how a party voted: if `stemming` is empty, say so and point to the besluitenlijst or stemmingsuitslagen of the meeting (search them with `archive_search`).
+4. **Votes.** Every motion has `stemming` (the vote text as registered) and, read from that text by pattern, `unaniem`, `tegen` and `voor` (lists of parties). Examples:
+   - who voted against motions about afval: `query: "afval", summary_by: "tegenstemmers"`
+   - adopted motions a party voted against: `stemde_tegen: "<party>", uitslag: "aangenomen"`
+   - how often a party's own motions passed: `fractie: "<party>", summary_by: "uitslag"`.
+   Read the result honestly:
+   - The Gemeenteraad usually records only one side: for adopted motions who voted **against**, for rejected motions who voted **for**. `summary_by: "tegenstemmers"` therefore shows rejected motions as "(alleen voorstemmers vastgelegd)"; use `voorstemmers` for those.
+   - "(geen stemming vastgelegd)" means NotuBiz has no vote text (often withdrawn motions, older items and some stadsdelen). Do not guess; point to the besluitenlijst or stemmingsuitslagen of the meeting (`archive_search`).
+   - Party names are used as written ("Partij voor de Dieren" and "PvdD" are different keys); mention it when it matters.
+   - The parsing is best effort; quote `stemming` when a single vote is the point of the answer.
+
+5. **What is registered where** (checked November 2026):
+
+   | Organisation | Motions + amendments | Outcome known | Vote detail |
+   |---|---:|---|---|
+   | Gemeenteraad (281) | about 10,200 since 2013 | almost all | most since about 2015 |
+   | Oost (1425) | about 770 since 2010 | almost all | about 1 in 10 |
+   | West (1413) | about 460, 2010 to March 2024 | almost all, mostly adopted | most |
+   | Zuid (1424) | about 210 since 2014 | 4 in 5 | none |
+   | Zuidoost (2122) | about 510 since 2006 | few (older items hold only a number) | almost none |
+   | Noord (977) | 11 | few | none |
+
+6. **Differences between organisations.** Each stadsdeel configured the module itself. The tools read the variants (`Initiatiefnemer`, `Betrokken partijen`, `Fractie(s)`, `Partij(en)`, `Datum motie`, `Datum vergadering`, vote text in *Uitslag* in West, outcome only in *Toelichting* in parts of Zuidoost). West mostly registered adopted motions; say so when comparing stadsdelen. Zuid and Oost also keep advice (*advies*, *ongevraagd advies*) and proposals in the module: they are left out unless `alle_typen: true`.
 
 ## Command line (Claude Code, Antigravity, by hand)
 

@@ -32,7 +32,10 @@ param(
   [string]$Indiener,
   [string]$Uitslag,
   [string]$Type,
-  [ValidateSet('none', 'uitslag', 'fractie', 'indiener', 'jaar')][string]$SummaryBy = 'uitslag',
+  [ValidateSet('none', 'uitslag', 'fractie', 'indiener', 'jaar', 'tegenstemmers', 'voorstemmers')][string]$SummaryBy = 'uitslag',
+  [string]$StemdeTegen,
+  [string]$StemdeVoor,
+  [switch]$AlleTypen,
   [int]$MaxSeconds = 0,
   [switch]$Full,
   [switch]$BuiltInOnly
@@ -63,8 +66,9 @@ switch ($Action) {
   'motions-sync' { $r = Sync-Motions -OrganisationId $OrganisationId -Root $Root -Full:$Full -MaxSeconds $MaxSeconds }
   'motions-search' {
     $p = @{ Root = $Root; OrganisationId = $OrganisationId; SummaryBy = $SummaryBy; Sort = $Sort; Limit = $Limit }
-    foreach ($k in @('Query', 'Fractie', 'Indiener', 'Uitslag', 'Type', 'DateFrom')) { $v = Get-Variable -Name $k -ValueOnly; if ($v) { $p[$k] = $v } }
+    foreach ($k in @('Query', 'Fractie', 'Indiener', 'Uitslag', 'Type', 'DateFrom', 'StemdeTegen', 'StemdeVoor')) { $v = Get-Variable -Name $k -ValueOnly; if ($v) { $p[$k] = $v } }
     if ($DateTo) { $p.DateTo = (Expand-DateTo $DateTo) }
+    if ($AlleTypen) { $p.AlleTypen = $true }
     $r = Search-Motions @p
   }
 }

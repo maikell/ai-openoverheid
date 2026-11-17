@@ -1,0 +1,119 @@
+<!doctype html>
+<!-- Source of docs/skills.png. Render at 2000x1760 CSS px with device scale factor 1.2 (2400x2112 PNG).
+     Fonts: IBM Plex Sans / Mono woff2 files in docs/fonts/ (not in the repo; any sans-serif works). -->
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>open-overheid: hoe werkt elke skill</title>
+<style>
+  @font-face { font-family: Plex; font-weight: 400; src: url(fonts/ibm-plex-sans-latin-400-normal.woff2); }
+  @font-face { font-family: Plex; font-weight: 600; src: url(fonts/ibm-plex-sans-latin-600-normal.woff2); }
+  @font-face { font-family: Plex; font-weight: 700; src: url(fonts/ibm-plex-sans-latin-700-normal.woff2); }
+  @font-face { font-family: PlexMono; font-weight: 400; src: url(fonts/ibm-plex-mono-latin-400-normal.woff2); }
+  :root { --ink:#16202e; --muted:#4a5564; --soft:#6b7480; --bg:#f4f6f8; --line:#dfe3e8;
+          --mcp:#127a68; --rest:#2e5fb3; --combo:#8a6312; --new:#fbf1d9; }
+  * { box-sizing:border-box; margin:0; }
+  body { width:2000px; height:1760px; background:var(--bg); font-family:Plex,sans-serif; color:var(--ink); padding:64px 80px 0; position:relative; }
+  .eyebrow { font-family:PlexMono,monospace; font-size:19px; letter-spacing:.16em; color:var(--muted); }
+  h1 { font-size:62px; font-weight:700; margin-top:12px; }
+  .sub { font-size:26px; color:var(--muted); margin-top:8px; }
+  .legend { position:absolute; right:80px; top:136px; display:flex; gap:22px; font-size:18px; color:var(--muted); }
+  .legend i { display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:8px; vertical-align:-1px; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-top:36px; }
+  .card { background:#fff; border:1px solid var(--line); border-top:6px solid var(--c); border-radius:12px; padding:18px 20px 16px; height:322px; position:relative; }
+  .top { display:flex; align-items:baseline; gap:10px; }
+  .name { font-family:PlexMono,monospace; font-size:21px; font-weight:400; color:var(--c); }
+  .kind { margin-left:auto; font-size:12px; font-weight:600; letter-spacing:.1em; color:var(--c); border:1.5px solid var(--c); border-radius:4px; padding:1px 6px; }
+  .n { background:var(--new); color:var(--combo); font-size:12px; font-weight:600; letter-spacing:.1em; border-radius:4px; padding:2px 6px; }
+  .what { font-size:19px; font-weight:600; line-height:1.3; margin-top:8px; }
+  ol { margin:10px 0 0; padding-left:0; list-style:none; counter-reset:s; }
+  ol li { counter-increment:s; position:relative; padding-left:28px; font-size:16px; line-height:1.38; margin-top:6px; }
+  ol li::before { content:counter(s); position:absolute; left:0; top:1px; width:19px; height:19px; border-radius:50%; background:var(--c); color:#fff; font-size:12px; font-weight:600; text-align:center; line-height:19px; }
+  code { font-family:PlexMono,monospace; font-size:13.5px; color:var(--c); }
+  .src { position:absolute; left:20px; right:20px; bottom:14px; font-size:13.5px; color:var(--soft); border-top:1px solid var(--line); padding-top:8px; }
+  .mcp { --c:var(--mcp); } .rest { --c:var(--rest); } .combo { --c:var(--combo); } .meta { --c:#5b6573; }
+  footer { position:absolute; left:80px; right:80px; bottom:36px; display:flex; gap:34px; font-size:18px; color:var(--muted); border-top:1px solid var(--line); padding-top:16px; }
+  footer .r { margin-left:auto; font-family:PlexMono,monospace; }
+</style>
+</head>
+<body>
+  <div class="eyebrow">OPEN-OVERHEID · VERSIE 1.10.2 · NOVEMBER 2026</div>
+  <h1>Hoe werkt elke skill?</h1>
+  <div class="sub">13 skills: wat ze doen, in welke stappen, en waar de gegevens vandaan komen</div>
+  <div class="legend"><span><i style="background:var(--mcp)"></i>MCP-server + skill</span><span><i style="background:var(--rest)"></i>REST-skill (API direct)</span><span><i style="background:var(--combo)"></i>Combineert andere skills</span></div>
+
+  <div class="grid">
+    <div class="card combo"><div class="top"><span class="name">adresdossier</span><span class="n">NIEUW</span><span class="kind">COMBI</span></div>
+      <div class="what">Eén adres erin, één dossier eruit</div>
+      <ol><li>BAG geeft buurtcode, wijkcode en coördinaten</li><li>Daarmee: CBS-cijfers, bestemmingsplan, vergunningen, APV, Woo, raadsstukken, misdrijven</li><li>Samenvatting bovenaan, per bron een sectie met datum en link</li></ol>
+      <div class="src">Gaat over de plek, nooit over bewoners</div></div>
+
+    <div class="card mcp"><div class="top"><span class="name">raadsarchief</span><span class="n">NIEUW</span><span class="kind">MCP</span></div>
+      <div class="what">Zoeken over jaren, moties en stemmingen volgen</div>
+      <ol><li><code>archive_index</code> zet gearchiveerde PDF's en agenda's om in tekst</li><li><code>archive_search</code>: eerste vermelding, tijdlijn per jaar, documenten met pagina</li><li><code>motions_sync</code> haalt moties op; <code>motions_search</code> telt uitslagen en wie tegen of voor stemde</li></ol>
+      <div class="src">Lokale index · NotuBiz-module Moties</div></div>
+
+    <div class="card mcp"><div class="top"><span class="name">amsterdam-notubiz</span><span class="kind">MCP</span></div>
+      <div class="what">Alle stukken van een vergadering of periode bewaren</div>
+      <ol><li>Vergadering ophalen (<code>archive_meeting</code>) of een reeks maanden (<code>archive_period</code>)</li><li>Elk stuk downloaden en met SHA-256 vergelijken</li><li>Nieuw, nieuwe versie (v2) of ongewijzigd; README en manifest per map</li></ol>
+      <div class="src">NotuBiz API · map op je eigen computer</div></div>
+
+    <div class="card mcp"><div class="top"><span class="name">raadsinformatie</span><span class="kind">MCP</span></div>
+      <div class="what">Vergaderingen, agenda's en stukken opzoeken</div>
+      <ol><li><code>get_meetings</code> per orgaan: raad, B&amp;W of stadsdeel, ook per jaar en maand</li><li><code>get_meeting_agenda</code> geeft agendapunten met documenten</li><li>Directe PDF-links naar moties, brieven en verslagen</li></ol>
+      <div class="src">NotuBiz API (amsterdam.raadsinformatie.nl)</div></div>
+
+    <div class="card mcp"><div class="top"><span class="name">bag</span><span class="kind">MCP</span></div>
+      <div class="what">Adres, gebouw en bestemming op die plek</div>
+      <ol><li>Postcode + huisnummer via de Locatieserver: id, buurtcode, RD-punt</li><li><code>bag_adresinfo</code>: gebruiksdoel, m², bouwjaar, aantal woningen</li><li><code>bag_plannen_op_adres</code>: bestemmingsplannen en bestemmingen op het punt</li></ol>
+      <div class="src">PDOK Locatieserver · BAG · Ruimtelijke plannen</div></div>
+
+    <div class="card mcp"><div class="top"><span class="name">cbs</span><span class="kind">MCP</span></div>
+      <div class="what">Statistiek per gemeente, wijk en buurt</div>
+      <ol><li><code>cbs_search_tables</code> zoekt de tabel, bijv. kerncijfers wijken en buurten</li><li><code>cbs_find_codes</code> vindt maatstaven en gebiedscodes</li><li><code>cbs_get_observations</code> haalt de cijfers; kaarten met PDOK-grenzen</li></ol>
+      <div class="src">CBS StatLine OData v4 · CC BY 4.0</div></div>
+
+    <div class="card rest"><div class="top"><span class="name">amsterdam-kerncijfers</span><span class="kind">REST</span></div>
+      <div class="what">Amsterdamse cijfers per gebied (BBGA)</div>
+      <ol><li>Indicator zoeken in de lijst van ruim 1.000</li><li>Script haalt waarden per gebied en jaar op</li><li>Vervallen indicatoren worden gemarkeerd, met opvolger</li></ol>
+      <div class="src">Onderzoek &amp; Statistiek Amsterdam</div></div>
+
+    <div class="card mcp"><div class="top"><span class="name">lokale-regelgeving</span><span class="kind">MCP</span></div>
+      <div class="what">De geldende APV en verordeningen</div>
+      <ol><li><code>lr_zoek_regelingen</code>: regeling zoeken, geldend op een datum</li><li><code>lr_inhoudsopgave</code>: alle artikelen met titels</li><li><code>lr_artikel</code>: volledige tekst op nummer of zoekterm</li></ol>
+      <div class="src">CVDR via KOOP SRU</div></div>
+
+    <div class="card rest"><div class="top"><span class="name">omgevingsplan</span><span class="kind">REST</span></div>
+      <div class="what">Wat mag er op een plek?</div>
+      <ol><li>Adres omzetten naar coördinaten</li><li>Bestemmingsplannen op het punt (tijdelijk deel van het omgevingsplan)</li><li>Wijzigingen en ontwerpplannen via KOOP; actuele regels in Regels op de kaart</li></ol>
+      <div class="src">PDOK · KOOP SRU · Omgevingswet</div></div>
+
+    <div class="card rest"><div class="top"><span class="name">officiele-bekendmakingen</span><span class="kind">REST</span></div>
+      <div class="what">Gemeenteblad, Staatscourant en vergunningen</div>
+      <ol><li>Zoekvraag in CQL, bijv. op straat en huisnummer</li><li>Filteren op gemeente, soort en datum</li><li>Titels, data en links naar het officiële besluit</li></ol>
+      <div class="src">KOOP Open Data SRU 1.2</div></div>
+
+    <div class="card rest"><div class="top"><span class="name">rechtspraak</span><span class="kind">REST</span></div>
+      <div class="what">Uitspraken zoeken en lezen</div>
+      <ol><li>Zoeken op onderwerp, instantie, rechtsgebied of datum</li><li>Resultaten met ECLI-nummer</li><li>Volledige uitspraak ophalen en samenvatten</li></ol>
+      <div class="src">data.rechtspraak.nl (REST/XML)</div></div>
+
+    <div class="card mcp"><div class="top"><span class="name">amsterdam-woo</span><span class="kind">MCP</span></div>
+      <div class="what">Woo- en Wob-besluiten van Amsterdam</div>
+      <ol><li><code>search_woo_decisions</code> zoekt op trefwoord, nieuwste eerst</li><li><code>get_woo_document</code> haalt details en dossier op</li><li>Directe link naar de PDF van het besluit</li></ol>
+      <div class="src">open.amsterdam (Memorix Mediabank)</div></div>
+
+    <div class="card mcp"><div class="top"><span class="name">amsterdam-subsidies</span><span class="kind">MCP</span></div>
+      <div class="what">Wie kreeg welke subsidie?</div>
+      <ol><li>Register live van Datapunt, 12 uur bewaard</li><li><code>search_subsidies</code> op aanvrager, regeling, stadsdeel of jaar</li><li><code>get_subsidies_summary</code> geeft totalen per cluster of beleidsterrein</li></ol>
+      <div class="src">Openbaar Subsidieregister Amsterdam</div></div>
+
+    <div class="card meta" style="grid-column: span 3;"><div class="top"><span class="name">beheer</span><span class="n">NIEUW</span><span class="kind">TOOLS</span></div>
+      <div class="what">Installeren, bijwerken en testen op elke computer</div>
+      <ol><li><code>install.ps1</code> kloont of werkt bij in <code>.gemini/config/plugins/open-overheid</code> en schrijft een <code>mcp_config.json</code> zonder gebruikersnaam (PowerShell vult <code>$HOME</code> zelf in)</li><li><code>tests/smoke_test.ps1</code> start alle 7 servers zoals de client dat doet: opstarten, toollijst, foutcodes en het raadsarchief op een mini-archief (29 tests offline), plus 8 live aanroepen naar de echte bronnen</li><li>Claude Desktop en Claude Code werken de plugin zelf bij via de marketplace; herstart daarna de app zodat nieuwe servers starten</li></ol>
+      <div class="src">github.com/maikell/ai-openoverheid · GPL-3.0</div></div>
+  </div>
+
+  <footer><span>Alleen open data, geen API-sleutels</span><span>Invoer van elke tool wordt gecontroleerd</span><span>Werkt in Antigravity, Claude Desktop, Claude Code en Claude op het web</span><span class="r">1.10.2</span></footer>
+</body>
+</html>

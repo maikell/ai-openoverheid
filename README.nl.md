@@ -15,6 +15,8 @@ Alle bronnen zijn openbaar. Je hebt geen API-sleutels of accounts nodig.
 
 ![Wat de toolkit kan, per thema: adres en buurt, ruimte en regels, raad en stadsdeel, raadsarchief over jaren, openbaarheid en geld, recht en beheer](docs/features.png)
 
+![Hoe elke skill werkt: wat hij doet, in welke stappen en waar de gegevens vandaan komen, voor alle 13 skills](docs/skills.png)
+
 ## ✅ Ondersteunde omgevingen
 
 | Omgeving | Model | Skills | MCP-servers | Installatie |

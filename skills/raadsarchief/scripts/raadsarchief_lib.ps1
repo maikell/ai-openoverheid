@@ -283,13 +283,33 @@ function Search-Archive {
 }
 
 # ------------------------------------------------------------------ motions
+# NotuBiz module 6 ("Moties"). Every organisation configures its own fields, so labels differ:
+# the Gemeenteraad uses "Indiener(s)" and "Fractie", stadsdelen use "Initiatiefnemer",
+# "Betrokken partijen", "Fractie(s)" or "Partij(en)"; dates are "Datum indiening", "datum indiening",
+# "Datum motie" or "Datum vergadering"; West keeps the vote in "Uitslag" ("Aangenomen, tegen VVD"),
+# Zuidoost often only in "Toelichting". The module also holds advice and proposals in some stadsdelen.
 
-function Get-NotubizJson([string]$Url) {
-    $wc = New-Object System.Net.WebClient
-    $wc.Encoding = [Text.Encoding]::UTF8
-    $wc.Headers.Add('User-Agent', $script:RaUserAgent)
-    $wc.Headers.Add('Accept', 'application/json')
-    try { return ($wc.DownloadString($Url) | ConvertFrom-Json) } finally { $wc.Dispose() }
+$script:Http = $null
+function Get-HttpClient {
+    if ($null -eq $script:Http) {
+        try { Add-Type -AssemblyName System.Net.Http -ErrorAction SilentlyContinue } catch { }
+        $h = New-Object System.Net.Http.HttpClient
+        $h.Timeout = [TimeSpan]::FromSeconds(180)
+        [void]$h.DefaultRequestHeaders.TryAddWithoutValidation('User-Agent', $script:RaUserAgent)
+        [void]$h.DefaultRequestHeaders.TryAddWithoutValidation('Accept', 'application/json')
+        $script:Http = $h
+    }
+    return $script:Http
+}
+
+function Get-NotubizJson([string]$Url) { return @(Get-NotubizJsonMany @($Url))[0] }
+
+# Several pages at once (at most 4 in parallel, to stay polite): a page of 250 items takes 10-15 s
+function Get-NotubizJsonMany([string[]]$Urls) {
+    $h = Get-HttpClient
+    $tasks = @($Urls | ForEach-Object { $h.GetByteArrayAsync($_) })
+    [void][Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]$tasks)
+    return @($tasks | ForEach-Object { [Text.Encoding]::UTF8.GetString($_.Result) | ConvertFrom-Json })
 }
 
 function ConvertFrom-HtmlText([string]$Html) {
@@ -298,36 +318,127 @@ function ConvertFrom-HtmlText([string]$Html) {
     return ($t -replace '\s+', ' ').Trim()
 }
 
+function ConvertTo-IsoDate([string]$d) {
+    $d = $d.Trim()
+    if ($d -match '^(\d{4}-\d{2}-\d{2})') { return $Matches[1] }
+    if ($d -match '^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})') { return ('{0}-{1:D2}-{2:D2}' -f $Matches[3], [int]$Matches[2], [int]$Matches[1]) }
+    return $d
+}
+
+function Get-MotionType([string]$Type, [string]$Title) {
+    $t = ($Type -replace '[^\p{L} ]', ' ').Trim().ToLower()
+    if ($t -match 'amendement') { return 'Amendement' }
+    if ($t -match 'motie') { return 'Motie' }
+    if (-not $t -or $t -eq 'pdf') {
+        if ($Title -match '(?i)amendement') { return 'Amendement' }
+        if ($Title -match '(?i)\bmotie') { return 'Motie' }
+        return 'Onbekend'
+    }
+    return (Get-Culture).TextInfo.ToTitleCase($t)   # Advies, Ongevraagd Advies, Voorstel ...
+}
+
+function Get-OutcomeKey([string]$Uitslag, [string]$Status, [string]$Toelichting) {
+    foreach ($u in @($Uitslag, $Status, $Toelichting)) {
+        $s = ([string]$u).ToLower()
+        if (-not $s.Trim()) { continue }
+        if ($s -match 'staking') { return 'staking van stemmen' }
+        if ($s -match 'ingetrokken') { return 'ingetrokken' }
+        if ($s -match 'aangehouden|uitgesteld') { return 'aangehouden' }
+        if ($s -match 'verworpen') { return 'verworpen' }
+        if ($s -match 'aan\w{0,3}n\w{0,2}men|unaniem') { return 'aangenomen' }   # also typos like AAngenomen, Aangeneomen
+        if ($s -match 'vervallen') { return 'vervallen' }
+        if ($s -match 'afgedaan') { return 'afgedaan' }
+    }
+    if (([string]$Uitslag).Trim()) { return 'anders' }
+    return 'onbekend'
+}
+
+function Split-PartyList([string]$s) {
+    $parts = $s -split '(?i)\s*,\s*|\s+en\s+|\s*;\s*|\s*/\s*'
+    return @($parts | ForEach-Object {
+        $x = (($_ -replace ':.*$', '') -replace '\s+', ' ').Trim(' ', '.', ':', '-')
+        $x = $x -creplace '^(de|het|De|Het)\s+(?=fractie)', ''
+        $x = $x -replace '(?i)^(fractie|fracties)\s+(van\s+)?', ''
+        ($x -creplace '^(de|het|De|Het)\s+(?=[A-Z]{2,}\b)', '').Trim()   # "de VVD", "het CDA"; keeps "De Vonk"
+    } | Where-Object { $_ -and $_.Length -le 40 -and $_ -notmatch '^\d' })
+}
+
+# Best effort: who voted for or against, from the free text NotuBiz holds ("met de stemmen tegen van
+# VVD en CDA is aangenomen", "Aangenomen, tegen VVD", "verworpen met de stemmen van SP en PvdD voor").
+function Get-VoteInfo([string]$Text) {
+    $r = [ordered]@{ unaniem = $false; tegen = @(); voor = @() }
+    if (-not $Text) { return $r }
+    $t = $Text -replace '\s+', ' '
+    if ($t -match '(?i)algemene stemmen|unaniem') { $r.unaniem = $true }
+    $stop = '(?=\s+(?:is\s+|wordt\s+)?(?:aangenomen|verworpen)\b|[.;(]|,\s*(?:onthouding|afwezig|voor\b)|$)'
+    $m = [regex]::Match($t, '(?i)met de stemmen (tegen|voor) van\s+(.+?)' + $stop)
+    if ($m.Success) { if ($m.Groups[1].Value -ieq 'voor') { $r.voor = Split-PartyList $m.Groups[2].Value } else { $r.tegen = Split-PartyList $m.Groups[2].Value } }
+    else {
+        # names can contain "voor" (Partij voor de Dieren), so the closing voor/tegen must end the phrase
+        $m = [regex]::Match($t, '(?i)met de stemmen van\s+(.+?)\s+(voor|tegen)(?=\s*(?:[.,;]|$|is\b|zijn\b|aangenomen|verworpen))')
+        if ($m.Success) { if ($m.Groups[2].Value -ieq 'voor') { $r.voor = Split-PartyList $m.Groups[1].Value } else { $r.tegen = Split-PartyList $m.Groups[1].Value } }
+        else {
+            $m = [regex]::Match($t, '(?i)\btegen(?:stemmen)?\b\s*:?\s*(.+?)' + $stop)
+            if ($m.Success) { $r.tegen = Split-PartyList $m.Groups[1].Value }
+        }
+    }
+    if (-not $r.voor.Count) {
+        $m = [regex]::Match($t, '(?i)\bvoor\s*:\s*(.+?)' + $stop)
+        if ($m.Success) { $r.voor = Split-PartyList $m.Groups[1].Value }
+    }
+    return $r
+}
+
 function ConvertFrom-MotionItem($item, [int]$OrgId) {
-    $f = @{}
+    $f = @{}   # case-insensitive keys: 'datum indiening' = 'Datum indiening'
     foreach ($a in @($item.attributes.attribute)) {
         if ($null -eq $a) { continue }
         $v = $null
         if ($null -ne $a.values) { $v = @($a.values.value | ForEach-Object { [string]$_ }) }
         elseif ($a.value -is [psobject] -and $a.value.url) { $v = [pscustomobject]@{ title = [string]$a.value.title; url = [string]$a.value.url } }
         else { $v = $a.value }
-        $f[[string]$a.label] = $v
+        if (-not $f.ContainsKey([string]$a.label)) { $f[[string]$a.label] = $v }
     }
     function first([string[]]$keys) { foreach ($k in $keys) { if ($f.ContainsKey($k) -and $null -ne $f[$k] -and [string]$f[$k] -ne '') { return $f[$k] } }; return $null }
-    function list([string[]]$keys) { foreach ($k in $keys) { if ($f.ContainsKey($k) -and $null -ne $f[$k]) { return @($f[$k] | ForEach-Object { [string]$_ }) } }; return @() }
+    function list([string[]]$keys) {
+        foreach ($k in $keys) {
+            if ($f.ContainsKey($k) -and $null -ne $f[$k] -and [string]$f[$k] -ne '') {
+                $vals = @($f[$k] | ForEach-Object { [string]$_ })
+                if ($vals.Count -eq 1 -and $vals[0] -match ',| en ') { return @(Split-PartyList $vals[0]) }   # one text field with several names
+                return $vals
+            }
+        }
+        return @()
+    }
+    $known = @('Titel', 'Type', 'Type document', 'Datum indiening', 'Datum motie', 'Datum vergadering', 'Datum', 'Aanmaakdatum', 'Uitslag', 'Status', 'Toelichting',
+        'Indiener(s)', 'Indiener', 'Initiatiefnemer', 'Fractie', 'Fractie(s)', 'Partij(en)', 'Betrokken partijen', 'Medeondertekenaars', 'Ondersteuners fractie',
+        'Gekoppeld evenement', 'Ingediend in', 'Hoofddocument', 'Document', 'Datum afdoening', 'Datum afgedaan', 'Datum antwoord', 'Stand van zaken',
+        'Portefeuillehouder', 'RIS-nummer', 'Beleidsveld', 'Afdoening', 'Toelichting afdoening')
     $doc = first @('Hoofddocument', 'Document')
-    $date = [string](first @('Datum indiening', 'Datum vergadering', 'Datum', 'Aanmaakdatum'))
-    $known = @('Titel', 'Type', 'Datum indiening', 'Datum vergadering', 'Datum', 'Aanmaakdatum', 'Uitslag', 'Status', 'Toelichting', 'Indiener(s)', 'Indiener', 'Fractie', 'Medeondertekenaars',
-        'Ondersteuners fractie', 'Gekoppeld evenement', 'Ingediend in', 'Hoofddocument', 'Document', 'Datum afdoening', 'Stand van zaken', 'Portefeuillehouder', 'RIS-nummer', 'Beleidsveld')
+    $titel = [string](first @('Titel'))
+    $uitslag = ([string](first @('Uitslag'))).Trim()
+    $toel = ConvertFrom-HtmlText ([string](first @('Toelichting')))
+    $status = [string](first @('Status'))
+    # The vote text: Uitslag when it says more than one word (West), else Toelichting
+    $stemming = if ($uitslag -match '\s' -and $uitslag -match '(?i)tegen|voor|stemmen|unaniem|onthouding') { $uitslag }
+                elseif ($toel -match '(?i)stemm|aangenomen|verworpen|unaniem|ingetrokken|\btegen\b') { $toel } else { '' }   # Toelichting is often just a number or summary
+    if ($uitslag -match '\s' -and $toel -and $toel -ne $uitslag -and $toel -match '(?i)stemmen|tegen') { $stemming = "$uitslag. $toel" }
+    $votes = Get-VoteInfo $stemming
     $extra = [ordered]@{}
     foreach ($k in $f.Keys) { if ($known -notcontains $k -and $null -ne $f[$k] -and -not ($f[$k] -is [psobject] -and $f[$k].url)) { $extra[$k] = [string]($f[$k] -join '; ') } }
-    $vergadering = first @('Gekoppeld evenement', 'Ingediend in')
     return [pscustomobject][ordered]@{
         id = [int]$item.'@attributes'.id; organisation_id = $OrgId
-        type = [string](first @('Type')); titel = [string](first @('Titel'))
-        datum = $(if ($date.Length -ge 10) { $date.Substring(0, 10) } else { $date })
-        uitslag = [string](first @('Uitslag')); status = [string](first @('Status'))
-        toelichting = (ConvertFrom-HtmlText ([string](first @('Toelichting'))))
-        indieners = @(list @('Indiener(s)', 'Indiener')); fracties = @(list @('Fractie'))
+        type = (Get-MotionType ([string](first @('Type', 'Type document'))) $titel); titel = $titel
+        datum = (ConvertTo-IsoDate ([string](first @('Datum indiening', 'Datum motie', 'Datum vergadering', 'Datum', 'Aanmaakdatum'))))
+        uitslag = (Get-OutcomeKey $uitslag $status $toel); uitslag_tekst = $uitslag; toelichting = $toel
+        stemming = $stemming; unaniem = $votes.unaniem; tegen = @($votes.tegen); voor = @($votes.voor)
+        indieners = @(list @('Indiener(s)', 'Indiener', 'Initiatiefnemer'))
+        fracties = @(list @('Fractie', 'Fractie(s)', 'Partij(en)', 'Betrokken partijen'))
         medeondertekenaars = @(list @('Medeondertekenaars')); ondersteuners = @(list @('Ondersteuners fractie'))
-        vergadering = [string](@($vergadering) -join '; ')
-        document = $(if ($doc) { [string]$doc.url } else { '' }); document_titel = $(if ($doc) { [string]$doc.title } else { '' })
-        afdoening = [string](first @('Datum afdoening')); stand_van_zaken = (ConvertFrom-HtmlText ([string](first @('Stand van zaken'))))
+        vergadering = [string](@(first @('Gekoppeld evenement', 'Ingediend in')) -join '; ')
+        document = $(if ($doc -and $doc.url) { [string]$doc.url } else { '' }); document_titel = $(if ($doc -and $doc.url) { [string]$doc.title } else { '' })
+        afdoening = (ConvertTo-IsoDate ([string](first @('Datum afdoening', 'Datum afgedaan', 'Datum antwoord'))))
+        stand_van_zaken = (ConvertFrom-HtmlText ([string](first @('Stand van zaken', 'Toelichting afdoening', 'Afdoening'))))
         portefeuillehouder = [string](@(first @('Portefeuillehouder')) -join '; '); ris = [string](first @('RIS-nummer'))
         beleidsveld = [string](first @('Beleidsveld')); last_modified = [string]$item.'@attributes'.last_modified
         extra = $extra
@@ -335,7 +446,7 @@ function ConvertFrom-MotionItem($item, [int]$OrgId) {
 }
 
 function Sync-Motions {
-    param([int]$OrganisationId = 281, [string]$Root, [switch]$Full, [int]$MaxSeconds = 0, [int]$PageSize = 250, [string]$ItemsJsonPath)
+    param([int]$OrganisationId = 281, [string]$Root, [switch]$Full, [int]$MaxSeconds = 0, [int]$PageSize = 250, [int]$Parallel = 4, [string]$ItemsJsonPath)
     $Root = Resolve-ArchiveRoot $Root
     $dir = Join-Path (Join-Path $Root '_index') 'moties'
     $cachePath = Join-Path $dir "$OrganisationId.json"
@@ -343,98 +454,110 @@ function Sync-Motions {
     $cache = Read-JsonFile $cachePath
     $byId = @{}
     $order = New-Object System.Collections.ArrayList
-    if ($cache -and -not $Full) { foreach ($m in @($cache.items)) { $byId[[int]$m.id] = $m; [void]$order.Add([int]$m.id) } }
+    $rawItems = @()
+    if ($cache -and -not $Full -and [int]$cache.format -ge 2) {
+        foreach ($m in @($cache.items)) { $byId[[int]$m.id] = $m; [void]$order.Add([int]$m.id) }
+    }
     $base = "https://api.notubiz.nl/organisations/$OrganisationId/modules/6/items?format=json"
 
     if ($ItemsJsonPath) {   # offline testing: one API page from a file
-        $pages = @(Get-Content -Raw -LiteralPath $ItemsJsonPath | ConvertFrom-Json)
-        $total = [int]$pages[0].pagination.'@attributes'.total_results
-        $start = 0
+        $page = Get-Content -Raw -LiteralPath $ItemsJsonPath | ConvertFrom-Json
+        $total = [int]$page.pagination.'@attributes'.total_results
+        $rawItems = @($page.item)
+        $start = $total
     } else {
         $probe = Get-NotubizJson "$base&limit=1"
         if ($null -eq $probe.pagination) { throw "Organisation $OrganisationId has no motions module with items in NotuBiz. For Stadsdeel Nieuw-West and Centrum, search the archived meeting documents instead (archive_search with doc_type motie)." }
         $total = [int]$probe.pagination.'@attributes'.total_results
-        if ($cache -and -not $Full -and $null -ne $cache.next_start) { $start = [int]$cache.next_start }
-        elseif ($cache -and -not $Full) { $start = [Math]::Max(0, $order.Count - 500) }   # re-read the tail: outcomes are often filled in later
+        if ($order.Count -gt 0 -and $null -ne $cache.next_start) { $start = [int]$cache.next_start }
+        elseif ($order.Count -gt 0) { $start = [Math]::Max(0, $order.Count - 500) }   # re-read the tail: outcomes are often filled in later
         else { $start = 0 }
     }
 
     $fetched = 0; $added = 0; $updated = 0; $next = $null
-    while ($start -lt $total) {
-        if ($MaxSeconds -gt 0 -and $sw.Elapsed.TotalSeconds -ge $MaxSeconds) { $next = $start; break }
-        if ($ItemsJsonPath) { $page = $pages[0] } else { $page = Get-NotubizJson "$base&limit=$PageSize&start=$start" }
-        $items = @($page.item)
-        if ($items.Count -eq 0) { break }
-        foreach ($it in $items) {
+    $process = {
+        param($items)
+        foreach ($it in @($items)) {
             if ($null -eq $it) { continue }
             $m = ConvertFrom-MotionItem $it $OrganisationId
-            if ($byId.ContainsKey($m.id)) { $updated++ } else { $added++; [void]$order.Add($m.id) }
+            if ($byId.ContainsKey($m.id)) { $script:upd++ } else { $script:add++; [void]$order.Add($m.id) }
             $byId[$m.id] = $m
-            $fetched++
+            $script:fet++
         }
-        $start += $items.Count
-        if ($ItemsJsonPath) { break }
     }
+    $script:upd = 0; $script:add = 0; $script:fet = 0
+    if ($ItemsJsonPath) { & $process $rawItems }
+    while ($start -lt $total) {
+        if ($MaxSeconds -gt 0 -and $sw.Elapsed.TotalSeconds -ge $MaxSeconds) { $next = $start; break }
+        $starts = @(); for ($s = $start; $s -lt $total -and $starts.Count -lt [Math]::Max(1, $Parallel); $s += $PageSize) { $starts += $s }
+        $pages = Get-NotubizJsonMany @($starts | ForEach-Object { "$base&limit=$PageSize&start=$_" })
+        $got = 0
+        foreach ($pg in $pages) { $items = @($pg.item | Where-Object { $null -ne $_ }); $got += $items.Count; & $process $items }
+        if ($got -eq 0) { break }
+        $start = $starts[$starts.Count - 1] + $PageSize
+    }
+    $fetched = $script:fet; $added = $script:add; $updated = $script:upd
     $orgName = if ($script:RaOrgNames.ContainsKey($OrganisationId)) { $script:RaOrgNames[$OrganisationId] } else { "Organisation $OrganisationId" }
+    $items = @($order | ForEach-Object { $byId[$_] })
     $obj = [ordered]@{
-        organisation_id = $OrganisationId; organisation = $orgName; source = $base
+        format = 2; organisation_id = $OrganisationId; organisation = $orgName; source = $base
         synced = (Get-Date).ToString('yyyy-MM-dd HH:mm'); total_in_notubiz = $total; next_start = $next
-        items = @($order | ForEach-Object { $byId[$_] })
+        items = $items
     }
     Write-JsonFile $cachePath $obj 5
-    $dates = @($obj.items | Where-Object { $_.datum } | ForEach-Object { $_.datum } | Sort-Object)
+    $dates = @($items | Where-Object { $_.datum -match '^\d{4}' } | ForEach-Object { $_.datum } | Sort-Object)
+    $types = @($items | Group-Object type | Sort-Object Count -Descending | ForEach-Object { "$($_.Name) $($_.Count)" }) -join ', '
     return [ordered]@{
-        organisation = "$orgName ($OrganisationId)"; cache = $cachePath; in_cache = $obj.items.Count; total_in_notubiz = $total
-        fetched = $fetched; added = $added; refreshed = $updated
+        organisation = "$orgName ($OrganisationId)"; cache = $cachePath; in_cache = $items.Count; total_in_notubiz = $total
+        fetched = $fetched; added = $added; refreshed = $updated; types = $types
+        with_vote_text = @($items | Where-Object { $_.stemming }).Count
         period = $(if ($dates.Count) { "$($dates[0]) .. $($dates[$dates.Count - 1])" } else { '' })
         complete = ($null -eq $next)
+        seconds = [int]$sw.Elapsed.TotalSeconds
         note = $(if ($null -ne $next) { "Time budget reached at item $next of $total. Run motions_sync again to continue." } else { '' })
     }
 }
 
-function Get-OutcomeKey([string]$Uitslag, [string]$Status) {
-    $u = ("$Uitslag $Status").ToLower()
-    if ($u -match 'aangenomen') { return 'aangenomen' }
-    if ($u -match 'verworpen') { return 'verworpen' }
-    if ($u -match 'ingetrokken') { return 'ingetrokken' }
-    if ($u -match 'aangehouden') { return 'aangehouden' }
-    if ($u -match 'vervallen') { return 'vervallen' }
-    if ($u -match 'afgedaan') { return 'afgedaan' }
-    if ($u.Trim()) { return 'anders' }
-    return 'onbekend'
+function Test-PartyMatch($list, [string]$name) {
+    return [bool](@($list) | Where-Object { $_ -like "*$name*" })
 }
 
 function Search-Motions {
     param(
         [int]$OrganisationId = 281, [string]$Root, [string]$Query, [string]$Fractie, [string]$Indiener,
-        [string]$Uitslag, [string]$Type, [string]$DateFrom, [string]$DateTo,
-        [ValidateSet('none', 'uitslag', 'fractie', 'indiener', 'jaar')][string]$SummaryBy = 'uitslag',
+        [string]$Uitslag, [string]$Type, [string]$DateFrom, [string]$DateTo, [string]$StemdeTegen, [string]$StemdeVoor,
+        [switch]$AlleTypen,
+        [ValidateSet('none', 'uitslag', 'fractie', 'indiener', 'jaar', 'tegenstemmers', 'voorstemmers')][string]$SummaryBy = 'uitslag',
         [ValidateSet('newest', 'oldest')][string]$Sort = 'newest', [int]$Limit = 25
     )
     $Root = Resolve-ArchiveRoot $Root
     $cachePath = Join-Path (Join-Path (Join-Path $Root '_index') 'moties') "$OrganisationId.json"
     $cache = Read-JsonFile $cachePath
     if (-not $cache) { throw "No motion cache for organisation $OrganisationId. Run motions_sync first." }
+    if ([int]$cache.format -lt 2) { throw "The motion cache for organisation $OrganisationId is from an older version. Run motions_sync with full: true once." }
     $q = if ($Query) { ConvertTo-QueryParts $Query } else { $null }
     $hits = New-Object System.Collections.ArrayList
     foreach ($m in @($cache.items)) {
+        if (-not $AlleTypen -and -not $Type -and $m.type -notin @('Motie', 'Amendement')) { continue }
+        if ($Type -and [string]$m.type -notlike "*$Type*") { continue }
         if ($DateFrom -and (-not $m.datum -or $m.datum -lt $DateFrom)) { continue }
         if ($DateTo -and (-not $m.datum -or $m.datum -gt $DateTo)) { continue }
-        if ($Type -and [string]$m.type -notlike "*$Type*" -and [string]$m.titel -notlike "*$Type*") { continue }
-        $outcome = Get-OutcomeKey $m.uitslag $m.status
-        if ($Uitslag -and $outcome -ne $Uitslag.ToLower() -and [string]$m.uitslag -notlike "*$Uitslag*") { continue }
-        if ($Fractie -and -not (@($m.fracties) | Where-Object { $_ -like "*$Fractie*" })) { continue }
-        if ($Indiener -and -not (@($m.indieners) + @($m.medeondertekenaars) | Where-Object { $_ -like "*$Indiener*" }) -and [string]$m.titel -notlike "*$Indiener*") { continue }
+        if ($Uitslag -and $m.uitslag -ne $Uitslag.ToLower()) { continue }
+        if ($Fractie -and -not (Test-PartyMatch $m.fracties $Fractie)) { continue }
+        if ($Indiener -and -not (Test-PartyMatch (@($m.indieners) + @($m.medeondertekenaars)) $Indiener) -and [string]$m.titel -notlike "*$Indiener*") { continue }
+        if ($StemdeTegen -and -not (Test-PartyMatch $m.tegen $StemdeTegen)) { continue }
+        if ($StemdeVoor -and -not ((Test-PartyMatch $m.voor $StemdeVoor) -or ($m.unaniem -and $m.uitslag -eq 'aangenomen'))) { continue }
         if ($q) {
-            $hay = @($m.titel, $m.toelichting, $m.document_titel, $m.vergadering, $m.beleidsveld, $m.stand_van_zaken, (@($m.indieners) -join ' '), (@($m.fracties) -join ' ')) -join "`n"
+            $hay = @($m.titel, $m.toelichting, $m.stemming, $m.document_titel, $m.vergadering, $m.beleidsveld, $m.stand_van_zaken, (@($m.indieners) -join ' '), (@($m.fracties) -join ' ')) -join "`n"
             $ok = $true
             foreach ($t in $q.Must) { if (-not $t.Rx.IsMatch($hay)) { $ok = $false; break } }
             if ($ok) { foreach ($rx in $q.Not) { if ($rx.IsMatch($hay)) { $ok = $false; break } } }
             if (-not $ok) { continue }
         }
         [void]$hits.Add([pscustomobject][ordered]@{
-            datum = $m.datum; type = $m.type; titel = $m.titel; uitslag = $outcome; uitslag_tekst = $m.uitslag
-            stemming = $m.toelichting; indieners = (@($m.indieners) -join ', '); fracties = (@($m.fracties) -join ', ')
+            datum = $m.datum; type = $m.type; titel = $m.titel; uitslag = $m.uitslag; uitslag_tekst = $m.uitslag_tekst
+            stemming = $m.stemming; unaniem = $m.unaniem; tegen = (@($m.tegen) -join ', '); voor = (@($m.voor) -join ', ')
+            indieners = (@($m.indieners) -join ', '); fracties = (@($m.fracties) -join ', ')
             vergadering = $m.vergadering; afdoening = $m.afdoening; stand_van_zaken = $m.stand_van_zaken
             document = $m.document; notubiz_id = $m.id
         })
@@ -445,9 +568,11 @@ function Search-Motions {
         foreach ($h in $hits) {
             $keys = switch ($SummaryBy) {
                 'uitslag' { @($h.uitslag) }
-                'jaar' { @($(if ($h.datum) { ([string]$h.datum).Substring(0, 4) } else { 'onbekend' })) }
+                'jaar' { @($(if ($h.datum -match '^\d{4}') { ([string]$h.datum).Substring(0, 4) } else { 'onbekend' })) }
                 'fractie' { $(if ($h.fracties) { @($h.fracties -split ', ') } else { @('onbekend') }) }
                 'indiener' { $(if ($h.indieners) { @($h.indieners -split ', ') } else { @('onbekend') }) }
+                'tegenstemmers' { $(if ($h.tegen) { @($h.tegen -split ', ') } elseif ($h.unaniem) { @('(unaniem)') } elseif ($h.voor) { @('(alleen voorstemmers vastgelegd)') } else { @('(geen stemming vastgelegd)') }) }
+                'voorstemmers' { $(if ($h.voor) { @($h.voor -split ', ') } elseif ($h.unaniem) { @('(unaniem)') } elseif ($h.tegen) { @('(alleen tegenstemmers vastgelegd)') } else { @('(geen stemming vastgelegd)') }) }
             }
             foreach ($k in $keys) {
                 if (-not $rows.ContainsKey($k)) { $rows[$k] = [ordered]@{ key = $k; total = 0; aangenomen = 0; verworpen = 0; ingetrokken = 0; overig = 0 } }
@@ -459,10 +584,11 @@ function Search-Motions {
         $summary = @($rows.Values | ForEach-Object { [pscustomobject]$_ } | Sort-Object $sortKey | Select-Object -First 60)
     }
     $sorted = if ($Sort -eq 'oldest') { $hits | Sort-Object datum, notubiz_id } else { $hits | Sort-Object @{ Expression = 'datum'; Descending = $true }, @{ Expression = 'notubiz_id'; Descending = $true } }
+    $withVotes = @($hits | Where-Object { $_.tegen -or $_.voor -or $_.unaniem }).Count
     return [ordered]@{
         organisation = $cache.organisation; synced = $cache.synced; in_cache = @($cache.items).Count
-        matched = $hits.Count; summary_by = $SummaryBy; summary = $summary
+        matched = $hits.Count; with_vote_detail = $withVotes; summary_by = $SummaryBy; summary = $summary
         results = @($sorted | Select-Object -First $Limit)
-        note = 'Outcome (uitslag) as registered in NotuBiz. Vote details per party are only in "stemming" when NotuBiz recorded them; otherwise check the besluitenlijst or stemmingsuitslagen of the meeting.'
+        note = 'Outcome normalised from the NotuBiz fields Uitslag/Toelichting. "tegen" and "voor" are read from the vote text by pattern (best effort); check "stemming" for the exact wording. Where no vote text was registered, the besluitenlijst or stemmingsuitslagen of the meeting has it.'
     }
 }

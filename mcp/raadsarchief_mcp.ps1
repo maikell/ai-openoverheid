@@ -80,7 +80,7 @@ while ($true) {
                         description = "Build or refresh the local search index over the archived council documents (PDF, Markdown agendas, DOCX, HTML) in the archive folder. Incremental: only new or changed files are read. Uses pdftotext when installed, else a built-in PDF reader (no OCR: scans are found by title only). Stops after max_seconds and reports what is left; call again to continue."
                         inputSchema = @{ type = "object"; properties = @{
                             root = @{ type = "string"; description = $rootDesc }
-                            max_seconds = @{ type = "integer"; description = "Time budget for text extraction in this call (10-600, default 45)."; default = 45 }
+                            max_seconds = @{ type = "integer"; description = "Time budget for text extraction in this call (10-600, default 30; keep it under the client timeout, usually 60 s)."; default = 30 }
                         } }
                     },
                     @{
@@ -102,27 +102,30 @@ while ($true) {
                     },
                     @{
                         name = "motions_sync"
-                        description = "Download motions and amendments with their outcome (aangenomen, verworpen, ingetrokken), submitters, parties and vote text from NotuBiz into a local cache. Available for the Gemeenteraad (281, about 10,000 since 2013) and stadsdelen Oost (1425), Zuidoost (2122), West (1413), Zuid (1424), Noord (977). Nieuw-West (2328) and Centrum (547) do not register motions in NotuBiz: use archive_search with doc_type motie. Incremental; call again when it reports a time budget stop."
+                        description = "Download motions and amendments with their outcome (aangenomen, verworpen, ingetrokken), submitters, parties, vote text and the parties that voted for or against from NotuBiz into a local cache. Available for the Gemeenteraad (281, about 10,000 since 2013) and stadsdelen Oost (1425), Zuidoost (2122), West (1413), Zuid (1424), Noord (977). Nieuw-West (2328) and Centrum (547) do not register motions in NotuBiz: use archive_search with doc_type motie. Incremental; call again until complete is true (the Gemeenteraad takes about 6 calls the first time)."
                         inputSchema = @{ type = "object"; properties = @{
                             organisation_id = @{ type = "integer"; description = "Default 281 (Gemeenteraad)."; default = 281 }
                             full = @{ type = "boolean"; description = "Download everything again instead of only new items and the most recent 500."; default = $false }
-                            max_seconds = @{ type = "integer"; description = "Time budget for this call (10-600, default 45)."; default = 45 }
+                            max_seconds = @{ type = "integer"; description = "Time budget for this call (10-600, default 20; one batch of 4 pages takes 15-30 s on top, and clients usually stop waiting after 60 s)."; default = 20 }
                             root = @{ type = "string"; description = $rootDesc }
                         } }
                     },
                     @{
                         name = "motions_search"
-                        description = "Search the local motion cache (run motions_sync first) and count outcomes. Filter on words in title and vote text, party (fractie), submitter (indiener), outcome, type and date; summary_by gives counts per outcome, party, submitter or year (submitted, adopted, rejected, withdrawn)."
+                        description = "Search the local motion cache (run motions_sync first) and count outcomes and votes. Filter on words in title and vote text, submitting party (fractie), submitter (indiener), outcome, type, date, and parties that voted against (stemde_tegen) or for (stemde_voor). summary_by gives counts per outcome, party, submitter, year, or per party that voted against or for. Only motions and amendments unless alle_typen is true."
                         inputSchema = @{ type = "object"; properties = @{
                             organisation_id = @{ type = "integer"; default = 281 }
                             query = @{ type = "string"; description = "Words in title, vote text, meeting; ""phrase"" and -exclude work." }
                             fractie = @{ type = "string"; description = "Part of the party (fractie) name." }
                             indiener = @{ type = "string"; description = "Submitter name part." }
-                            uitslag = @{ type = "string"; enum = @("aangenomen", "verworpen", "ingetrokken", "aangehouden", "vervallen", "afgedaan", "anders", "onbekend") }
+                            uitslag = @{ type = "string"; enum = @("aangenomen", "verworpen", "ingetrokken", "aangehouden", "staking van stemmen", "vervallen", "afgedaan", "anders", "onbekend") }
+                            stemde_tegen = @{ type = "string"; description = "Party that voted against (name part), read from the vote text." }
+                            stemde_voor = @{ type = "string"; description = "Party that voted for (name part); unanimous adopted motions count too." }
+                            alle_typen = @{ type = "boolean"; description = "Also include advice and proposals that some stadsdelen keep in the same module."; default = $false }
                             type = @{ type = "string"; description = "'Motie' or 'Amendement'." }
                             date_from = @{ type = "string"; description = "yyyy, yyyy-mm or yyyy-mm-dd." }
                             date_to = @{ type = "string"; description = "yyyy, yyyy-mm or yyyy-mm-dd." }
-                            summary_by = @{ type = "string"; enum = @("none", "uitslag", "fractie", "indiener", "jaar"); default = "uitslag" }
+                            summary_by = @{ type = "string"; enum = @("none", "uitslag", "fractie", "indiener", "jaar", "tegenstemmers", "voorstemmers"); default = "uitslag" }
                             sort = @{ type = "string"; enum = @("newest", "oldest"); default = "newest" }
                             limit = @{ type = "integer"; description = "0-200, default 25."; default = 25 }
                             root = @{ type = "string"; description = $rootDesc }
@@ -138,7 +141,7 @@ while ($true) {
                 $root = Get-Root $a
 
                 if ($toolName -eq "archive_index") {
-                    $secs = Get-Int $a 'max_seconds' 45 10 600
+                    $secs = Get-Int $a 'max_seconds' 30 10 600
                     $res = Update-ArchiveIndex -Root $root -MaxSeconds $secs 3>$null 4>$null 6>$null
                     Send-Text $id ($res | ConvertTo-Json -Depth 5)
                 }
@@ -159,18 +162,21 @@ while ($true) {
                 }
                 elseif ($toolName -eq "motions_sync") {
                     $org = Get-Int $a 'organisation_id' 281 1 99999999
-                    $secs = Get-Int $a 'max_seconds' 45 10 600
+                    $secs = Get-Int $a 'max_seconds' 20 10 600
                     $res = Sync-Motions -OrganisationId $org -Root $root -Full:($a.full -eq $true) -MaxSeconds $secs 3>$null
                     Send-Text $id ($res | ConvertTo-Json -Depth 5)
                 }
                 elseif ($toolName -eq "motions_search") {
                     $p = @{ Root = $root; OrganisationId = (Get-Int $a 'organisation_id' 281 1 99999999)
-                        SummaryBy = (Get-Choice $a 'summary_by' @('none', 'uitslag', 'fractie', 'indiener', 'jaar') 'uitslag')
+                        SummaryBy = (Get-Choice $a 'summary_by' @('none', 'uitslag', 'fractie', 'indiener', 'jaar', 'tegenstemmers', 'voorstemmers') 'uitslag')
                         Sort = (Get-Choice $a 'sort' @('newest', 'oldest') 'newest')
                         Limit = (Get-Int $a 'limit' 25 0 200) }
                     $q = Get-Query $a $false; if ($q) { $p.Query = $q }
                     foreach ($k in @('fractie', 'indiener', 'type')) { $v = Get-Name $a $k; if ($v) { $p[(Get-Culture).TextInfo.ToTitleCase($k)] = $v } }
-                    $v = Get-Choice $a 'uitslag' @('aangenomen', 'verworpen', 'ingetrokken', 'aangehouden', 'vervallen', 'afgedaan', 'anders', 'onbekend') $null; if ($v) { $p.Uitslag = $v }
+                    $v = Get-Choice $a 'uitslag' @('aangenomen', 'verworpen', 'ingetrokken', 'aangehouden', 'staking van stemmen', 'vervallen', 'afgedaan', 'anders', 'onbekend') $null; if ($v) { $p.Uitslag = $v }
+                    $v = Get-Name $a 'stemde_tegen'; if ($v) { $p.StemdeTegen = $v }
+                    $v = Get-Name $a 'stemde_voor'; if ($v) { $p.StemdeVoor = $v }
+                    if ($a.alle_typen -eq $true) { $p.AlleTypen = $true }
                     $v = Get-Date10 $a 'date_from'; if ($v) { $p.DateFrom = $v }
                     $v = Get-Date10 $a 'date_to'; if ($v) { $p.DateTo = $v }
                     $res = Search-Motions @p 3>$null
