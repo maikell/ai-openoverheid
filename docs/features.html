@@ -1,0 +1,109 @@
+<!doctype html>
+<!-- Source of docs/features.png. Render at 2000x1400 CSS px with device scale factor 1.2 (2400x1680 PNG).
+     Fonts: IBM Plex Sans / Mono woff2 files in docs/fonts/ (not in the repo; any sans-serif works). -->
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>open-overheid: wat kan het</title>
+<style>
+  @font-face { font-family: Plex; font-weight: 400; src: url(fonts/ibm-plex-sans-latin-400-normal.woff2); }
+  @font-face { font-family: Plex; font-weight: 600; src: url(fonts/ibm-plex-sans-latin-600-normal.woff2); }
+  @font-face { font-family: Plex; font-weight: 700; src: url(fonts/ibm-plex-sans-latin-700-normal.woff2); }
+  @font-face { font-family: PlexMono; font-weight: 400; src: url(fonts/ibm-plex-mono-latin-400-normal.woff2); }
+  :root { --ink:#16202e; --muted:#4a5564; --soft:#6b7480; --bg:#f4f6f8; --line:#dfe3e8;
+          --c1:#127a68; --c2:#2e5fb3; --c3:#8a4fb0; --c4:#b5541c; --c5:#8a6312; --c6:#3d6b2f; --new:#fbf1d9; --newi:#8a6312; }
+  * { box-sizing:border-box; margin:0; }
+  body { width:2000px; height:1400px; background:var(--bg); font-family:Plex,sans-serif; color:var(--ink); padding:68px 80px 0; position:relative; }
+  .eyebrow { font-family:PlexMono,monospace; font-size:19px; letter-spacing:.16em; color:var(--muted); }
+  h1 { font-size:66px; font-weight:700; margin-top:12px; letter-spacing:-.01em; }
+  .sub { font-size:28px; color:var(--muted); margin-top:10px; }
+  .stats { position:absolute; right:80px; top:120px; display:flex; gap:28px; }
+  .stat b { display:block; font-size:54px; font-weight:700; line-height:1; text-align:right; }
+  .stat span { font-size:17px; color:var(--muted); }
+  .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:42px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:24px 26px 20px; border-top:6px solid var(--c); height:470px; position:relative; }
+  .card h2 { font-size:28px; font-weight:700; }
+  .card .q { font-size:17px; color:var(--soft); font-style:italic; margin-top:4px; }
+  ul { list-style:none; padding:0; margin-top:16px; }
+  li { font-size:18.5px; line-height:1.38; padding:7px 0 7px 22px; position:relative; border-top:1px solid #eef1f4; }
+  li:first-child { border-top:0; }
+  li::before { content:""; position:absolute; left:2px; top:16px; width:9px; height:9px; border-radius:2px; background:var(--c); }
+  li code { font-family:PlexMono,monospace; font-size:14.5px; color:var(--c); }
+  .n { background:var(--new); color:var(--newi); font-weight:600; font-size:11.5px; letter-spacing:.1em; padding:2px 6px; border-radius:4px; margin-left:6px; vertical-align:2px; }
+  .src { position:absolute; left:26px; right:26px; bottom:18px; font-size:14.5px; color:var(--soft); border-top:1px solid var(--line); padding-top:10px; }
+  footer { position:absolute; left:80px; right:80px; bottom:40px; display:flex; gap:34px; font-size:18px; color:var(--muted); border-top:1px solid var(--line); padding-top:18px; }
+  footer .r { margin-left:auto; font-family:PlexMono,monospace; }
+</style>
+</head>
+<body>
+  <div class="eyebrow">OPEN-OVERHEID · VERSIE 1.10.1 · NOVEMBER 2026</div>
+  <h1>Wat kan de toolkit nu?</h1>
+  <div class="sub">Open overheidsdata van Amsterdam en Nederland, rechtstreeks in Gemini en Claude</div>
+  <div class="stats"><div class="stat"><b>13</b><span>skills</span></div><div class="stat"><b>7</b><span>MCP-servers</span></div><div class="stat"><b>23</b><span>tools</span></div><div class="stat"><b>29</b><span>offline tests</span></div></div>
+
+  <div class="grid">
+    <div class="card" style="--c:var(--c1)">
+      <h2>Adres &amp; buurt</h2><div class="q">"Wat weten we over Amstel 1?"</div>
+      <ul>
+        <li>Adresdossier: alles over één adres in één document<span class="n">NIEUW</span></li>
+        <li>BAG: gebruiksdoel, oppervlakte, bouwjaar, aantal woningen <code>bag_adresinfo</code></li>
+        <li>CBS-cijfers per buurt, wijk en gemeente, met kaarten <code>cbs_get_observations</code></li>
+        <li>Amsterdamse kerncijfers (BBGA) per gebied</li>
+        <li>Misdrijven per buurt (plugin politie-misdrijven)</li>
+      </ul>
+      <div class="src">BAG/PDOK · CBS StatLine · Onderzoek &amp; Statistiek · Politie</div>
+    </div>
+    <div class="card" style="--c:var(--c2)">
+      <h2>Ruimte &amp; regels</h2><div class="q">"Wat mag hier en wat zegt de APV?"</div>
+      <ul>
+        <li>Bestemmingsplannen en bestemmingen op een adres <code>bag_plannen_op_adres</code><span class="n">NIEUW</span></li>
+        <li>Omgevingsplan-wijzigingen en ontwerpplannen</li>
+        <li>Geldende APV en verordeningen, per datum en artikel <code>lr_artikel</code></li>
+        <li>Vergunningen en bekendmakingen in het gemeenteblad</li>
+      </ul>
+      <div class="src">PDOK Ruimtelijke plannen · KOOP SRU · CVDR</div>
+    </div>
+    <div class="card" style="--c:var(--c3)">
+      <h2>Raad &amp; stadsdeel</h2><div class="q">"Wat staat er op de agenda?"</div>
+      <ul>
+        <li>Vergaderingen, agenda's en stukken van raad, B&amp;W en alle stadsdelen <code>get_meetings</code></li>
+        <li>Eén vergadering archiveren met SHA-256 en versies <code>archive_meeting</code></li>
+        <li>Een hele periode archiveren, in porties <code>archive_period</code><span class="n">NIEUW</span></li>
+        <li>Oudere vergaderingen per jaar en maand opvragen<span class="n">NIEUW</span></li>
+      </ul>
+      <div class="src">NotuBiz API · lokaal archief op je eigen computer</div>
+    </div>
+    <div class="card" style="--c:var(--c4)">
+      <h2>Raadsarchief over jaren</h2><div class="q">"Wanneer kwam de Meervaart voor het eerst langs?"</div>
+      <ul>
+        <li>Zoekindex over je gearchiveerde PDF's en agenda's <code>archive_index</code><span class="n">NIEUW</span></li>
+        <li>Eerste vermelding, tijdlijn per jaar, documenten met pagina <code>archive_search</code><span class="n">NIEUW</span></li>
+        <li>Moties en amendementen met uitslag en stemverklaring <code>motions_search</code><span class="n">NIEUW</span></li>
+        <li>Tellingen per fractie, indiener, uitslag of jaar<span class="n">NIEUW</span></li>
+      </ul>
+      <div class="src">Lokale index · NotuBiz-module Moties (raad + 5 stadsdelen)</div>
+    </div>
+    <div class="card" style="--c:var(--c5)">
+      <h2>Openbaarheid &amp; geld</h2><div class="q">"Welke Woo-besluiten en subsidies zijn er?"</div>
+      <ul>
+        <li>Woo- en Wob-besluiten van Amsterdam, met PDF <code>search_woo_decisions</code></li>
+        <li>Subsidieregister: wie kreeg wat, per stadsdeel en jaar <code>search_subsidies</code></li>
+        <li>Totalen per cluster of beleidsterrein <code>get_subsidies_summary</code></li>
+      </ul>
+      <div class="src">open.amsterdam (Memorix) · Datapunt Amsterdam</div>
+    </div>
+    <div class="card" style="--c:var(--c6)">
+      <h2>Recht &amp; beheer</h2><div class="q">"Welke uitspraken zijn er, en werkt alles nog?"</div>
+      <ul>
+        <li>Rechterlijke uitspraken zoeken en lezen via ECLI</li>
+        <li>Officiële bekendmakingen en Staatscourant</li>
+        <li>Installeren en bijwerken op elke computer <code>install.ps1</code><span class="n">NIEUW</span></li>
+        <li>Rooktest van alle servers <code>smoke_test.ps1</code><span class="n">NIEUW</span></li>
+      </ul>
+      <div class="src">data.rechtspraak.nl · KOOP SRU · GitHub</div>
+    </div>
+  </div>
+
+  <footer><span>Alleen open data, geen API-sleutels</span><span>Antigravity · Claude Desktop · Claude Code · Claude op het web</span><span>Lokale data blijft lokaal</span><span class="r">github.com/maikell/ai-openoverheid</span></footer>
+</body>
+</html>

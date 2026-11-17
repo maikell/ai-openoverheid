@@ -13,6 +13,8 @@ All sources are public. No API keys or accounts are required.
 
 ![Overview of the toolkit: seven MCP servers with skills (Raadsinformatie with archive_meeting and archive_period, Raadsarchief with local search and motions, Woo-besluiten, Subsidieregister, CBS StatLine, Lokale regelgeving, BAG with zoning plans at an address), the adresdossier skill that combines them and four REST skills (Omgevingsplan, Rechtspraak, Officiële Bekendmakingen, Amsterdam Kerncijfers), usable in Google Antigravity and Claude](docs/architecture-v2.png)
 
+![What the toolkit can do, by theme: address and neighbourhood, space and rules, council and district, council archive across years, transparency and money, law and maintenance](docs/features.png)
+
 ## ✅ Supported environments
 
 | Environment | Model | Skills | MCP servers | Install |
@@ -65,6 +67,7 @@ The data is Dutch, so skill names and some instructions are in Dutch. Assistants
 skills/<name>/SKILL.md            The skills (shared by all environments)
 mcp/*.ps1                         Seven MCP servers (stdio, PowerShell)
 tests/smoke_test.ps1              Smoke test for all MCP servers
+install.ps1                       Install or update for Antigravity on any computer
 rules/AGENTS.md                   General agent guidelines (loaded automatically by Antigravity)
 plugin.json                       Plugin manifest for Antigravity
 mcp_config.example.json           MCP config template for Antigravity
@@ -86,6 +89,14 @@ mcp_config.example.json           MCP config template for Antigravity
 
 ### Google Antigravity (Gemini)
 
+**Quickest, on any computer (Windows PowerShell):** this clones or updates the toolkit in `%USERPROFILE%\.gemini\config\plugins\open-overheid`, writes a user-name independent `mcp_config.json` (keeping servers you added yourself) and runs the smoke test:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/maikell/ai-openoverheid/main/install.ps1)))
+```
+
+Run the same line again to update. From an existing clone: `powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1` (add `-Offline` to skip live calls). On macOS/Linux use `pwsh install.ps1`. Prefer to do it by hand? Follow the steps below.
+
 1. **Clone the repository** into the Antigravity plugins folder:
 
    ```powershell
@@ -102,11 +113,11 @@ mcp_config.example.json           MCP config template for Antigravity
    Copy-Item mcp_config.example.json mcp_config.json
    ```
 
-   The template uses `${env:USERPROFILE}`. If your Antigravity build does not expand environment variables in MCP paths, replace it in `mcp_config.json` with your full path, e.g. `C:\\Users\\<YOUR_USERNAME>\\.gemini\\config\\plugins\\open-overheid\\mcp\\amsterdam_woo_mcp.ps1`. `mcp_config.json` is in `.gitignore`, so your personal path never ends up in Git.
+   The template contains no user name: each server starts PowerShell with `-Command` and lets it resolve `$HOME` (`& (Join-Path $HOME '.gemini/config/plugins/open-overheid/mcp/...')`), so the same file works on every computer. If you cloned to another folder, replace those arguments with `-File` and the full path to the script. `mcp_config.json` is in `.gitignore`.
 
 3. **Restart Antigravity** or reload plugins.
 
-**Update:** run `git pull` in the `open-overheid` folder.
+**Update:** run `install.ps1` again, or `git pull` in the `open-overheid` folder (then add any new servers from `mcp_config.example.json` to your `mcp_config.json`).
 
 ### Claude Desktop
 

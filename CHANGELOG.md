@@ -2,6 +2,20 @@
 
 All notable changes to the AI Open Overheid Toolkit.
 
+## 1.10.1 – 2026-11-17
+
+### Changed
+- **`mcp_config.example.json` no longer depends on the user name.** Each server now starts as `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "& (Join-Path $HOME '.gemini/config/plugins/open-overheid/mcp/<server>.ps1')"`: PowerShell itself resolves `$HOME` when the server starts, so the same `mcp_config.json` works on every computer and every account.
+  - *Why:* the toolkit runs on computers with different Windows user names. The old template used `${env:USERPROFILE}`, which not every Antigravity build expands, so in practice every computer needed its own hand-edited path.
+
+### Added
+- **`install.ps1`**: installs or updates the toolkit for Antigravity on any computer in one command (also runnable straight from GitHub). It clones into `<home>/.gemini/config/plugins/open-overheid` or runs `git pull --ff-only`, writes the user-name independent server entries into `mcp_config.json` (servers you added yourself are kept, an existing BOM is preserved), and runs the smoke test against that file. If the `-Command` form fails on a computer, it falls back to absolute `-File` paths and tests again. `-Offline`, `-SkipTest`, `-PluginsDir` and `-UpdateClaudeCode` are optional.
+  - *Why:* with 1.10.0 adding a server, a plain `git pull` was no longer enough; new servers also had to be copied into `mcp_config.json` by hand, on every computer.
+- **`docs/features.png`** (source `docs/features.html`): an infographic in Dutch of what the toolkit supports, grouped by theme, with new features marked; shown at the top of both READMEs.
+  - *Why:* the architecture diagram shows servers and tools, not what a user can ask; with 13 skills that had become hard to see.
+- **`tests/smoke_test.ps1 -Config <file>`** tests the servers exactly as a given MCP config starts them (command and arguments as written), instead of only via `.mcp.json`.
+  - *Why:* the Antigravity config starts the servers differently from the Claude plugin; a passing Claude test said nothing about it.
+
 ## 1.10.0 – 2026-11-17
 
 ### Added

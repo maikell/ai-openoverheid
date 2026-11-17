@@ -4,70 +4,77 @@
       "command": "powershell.exe",
       "args": [
         "-NoProfile",
+        "-NonInteractive",
         "-ExecutionPolicy",
         "Bypass",
-        "-File",
-        "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\amsterdam_woo_mcp.ps1"
+        "-Command",
+        "& (Join-Path $HOME '.gemini/config/plugins/open-overheid/mcp/amsterdam_woo_mcp.ps1')"
       ]
     },
     "amsterdam-subsidies": {
       "command": "powershell.exe",
       "args": [
         "-NoProfile",
+        "-NonInteractive",
         "-ExecutionPolicy",
         "Bypass",
-        "-File",
-        "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\subsidies_mcp.ps1"
+        "-Command",
+        "& (Join-Path $HOME '.gemini/config/plugins/open-overheid/mcp/subsidies_mcp.ps1')"
       ]
     },
     "amsterdam-raadsinformatie": {
       "command": "powershell.exe",
       "args": [
         "-NoProfile",
+        "-NonInteractive",
         "-ExecutionPolicy",
         "Bypass",
-        "-File",
-        "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\raadsinformatie_mcp.ps1"
+        "-Command",
+        "& (Join-Path $HOME '.gemini/config/plugins/open-overheid/mcp/raadsinformatie_mcp.ps1')"
       ]
     },
     "cbs": {
       "command": "powershell.exe",
       "args": [
         "-NoProfile",
+        "-NonInteractive",
         "-ExecutionPolicy",
         "Bypass",
-        "-File",
-        "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\cbs_mcp.ps1"
+        "-Command",
+        "& (Join-Path $HOME '.gemini/config/plugins/open-overheid/mcp/cbs_mcp.ps1')"
       ]
     },
     "lokale-regelgeving": {
       "command": "powershell.exe",
       "args": [
         "-NoProfile",
+        "-NonInteractive",
         "-ExecutionPolicy",
         "Bypass",
-        "-File",
-        "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\lokale_regelgeving_mcp.ps1"
+        "-Command",
+        "& (Join-Path $HOME '.gemini/config/plugins/open-overheid/mcp/lokale_regelgeving_mcp.ps1')"
       ]
     },
     "bag": {
       "command": "powershell.exe",
       "args": [
         "-NoProfile",
+        "-NonInteractive",
         "-ExecutionPolicy",
         "Bypass",
-        "-File",
-        "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\bag_mcp.ps1"
+        "-Command",
+        "& (Join-Path $HOME '.gemini/config/plugins/open-overheid/mcp/bag_mcp.ps1')"
       ]
     },
     "raadsarchief": {
       "command": "powershell.exe",
       "args": [
         "-NoProfile",
+        "-NonInteractive",
         "-ExecutionPolicy",
         "Bypass",
-        "-File",
-        "${env:USERPROFILE}\\.gemini\\config\\plugins\\open-overheid\\mcp\\raadsarchief_mcp.ps1"
+        "-Command",
+        "& (Join-Path $HOME '.gemini/config/plugins/open-overheid/mcp/raadsarchief_mcp.ps1')"
       ]
     }
   }

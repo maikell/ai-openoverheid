@@ -1,7 +1,7 @@
 {
   "name": "open-overheid",
   "description": "Toolkit for Dutch and Amsterdam open government data: addresses and buildings (BAG), local regulations in force (CVDR, e.g. the APV), CBS StatLine statistics and maps for every municipality, district and neighbourhood, council meetings and documents (NotuBiz) with a local search index across years and motion tracking, zoning plans at an address (PDOK/KOOP), court rulings (ECLI), official publications (KOOP SRU), Amsterdam key figures (BBGA), Woo/FOI decisions (open.amsterdam) and the Amsterdam subsidy register, combined into an address dossier on request. Works with Gemini (Antigravity) and Claude.",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "suggestedPrompts": [
     "Wat zijn de omgevingsplanregels en vergunningen op Amstel 1 Amsterdam?",
     "Welke subsidies zijn er verleend door de Gemeente Amsterdam in Stadsdeel Nieuw-West?",

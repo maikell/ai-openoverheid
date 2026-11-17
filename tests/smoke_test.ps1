@@ -32,12 +32,14 @@ param(
   [switch]$Offline,
   [ValidateSet('auto', 'powershell', 'pwsh')][string]$Shell = 'auto',
   [int]$TimeoutSeconds = 60,
-  [string]$JsonReport
+  [string]$JsonReport,
+  [string]$Config   # test the servers exactly as configured in this file (e.g. Antigravity's mcp_config.json)
 )
 
 $ErrorActionPreference = 'Stop'
 $pluginRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).ProviderPath
-$config = Get-Content -Raw -LiteralPath (Join-Path $pluginRoot '.mcp.json') | ConvertFrom-Json
+$configFile = if ($Config) { (Resolve-Path -LiteralPath $Config).ProviderPath } else { Join-Path $pluginRoot '.mcp.json' }
+$cfg = ((Get-Content -Raw -LiteralPath $configFile) -replace '^\uFEFF', '') | ConvertFrom-Json
 
 # Which shell starts the servers: the one in .mcp.json (powershell.exe) when present, else pwsh
 function Resolve-Shell {
@@ -108,10 +110,30 @@ $utf8 = New-Object System.Text.UTF8Encoding($false)
 [IO.File]::WriteAllText((Join-Path $meeting 'manifest.json'), '{"organisation":"Stadsdeel Nieuw-West","organisation_id":2328,"body":"Stadsdeelcommissie","event_id":1,"date":"2026-11-10","files":[]}', $utf8)
 
 # ---- JSON-RPC client
-function Start-McpServer([string]$Script) {
+# Windows command-line quoting for one argument
+function ConvertTo-ArgString([string]$a) {
+  if ($a -and $a -notmatch '[\s"]') { return $a }
+  $out = '"'; $bs = 0
+  foreach ($ch in $a.ToCharArray()) {
+    if ($ch -eq '\') { $bs++; continue }
+    if ($ch -eq '"') { $out += ('\' * (2 * $bs + 1)) + '"' } else { $out += ('\' * $bs) + $ch }
+    $bs = 0
+  }
+  return $out + ('\' * (2 * $bs)) + '"'
+}
+
+function Start-McpServer([string]$Script, $Def) {
   $psi = New-Object System.Diagnostics.ProcessStartInfo
-  $psi.FileName = $exe
-  $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$Script`""
+  if ($Config) {
+    # exactly as the client would start it: configured command and arguments
+    $cmd = [string]$Def.command
+    if ($Shell -eq 'pwsh' -and $cmd -match '^powershell(\.exe)?$') { $cmd = $exe }
+    $psi.FileName = $cmd
+    $psi.Arguments = (@($Def.args) | ForEach-Object { ConvertTo-ArgString ([string]$_) }) -join ' '
+  } else {
+    $psi.FileName = $exe
+    $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$Script`""
+  }
   $psi.UseShellExecute = $false
   $psi.RedirectStandardInput = $true; $psi.RedirectStandardOutput = $true; $psi.RedirectStandardError = $true
   $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
@@ -158,23 +180,25 @@ function Test-Call($proc, $srv, $label, $name, $toolArgs, $expect) {
   } catch { Add-Result $srv $label $false $_.Exception.Message $null }
 }
 
-$names = @($config.mcpServers.PSObject.Properties.Name)
+$names = @($cfg.mcpServers.PSObject.Properties.Name)
+if ($Config) { $names = @($names | Where-Object { $plan.ContainsKey($_) }) }   # only open-overheid servers
 if ($Server) {
   $Server = @($Server -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })   # -File passes 'a,b' as one string
   $unknown = @($Server | Where-Object { $names -notcontains $_ })
   if ($unknown) { throw "Unknown server(s): $($unknown -join ', '). Known: $($names -join ', ')" }
   $names = @($names | Where-Object { $Server -contains $_ })
 }
+Write-Host "Config: $configFile"
 Write-Host "open-overheid MCP smoke test - $($names.Count) servers - shell: $exe - $(if ($Offline) { 'offline' } else { 'with live calls' })"
 
 foreach ($srv in $names) {
-  $def = $config.mcpServers.$srv
+  $def = $cfg.mcpServers.$srv
   $scriptArg = @($def.args)[-1] -replace '\$\{CLAUDE_PLUGIN_ROOT\}', $pluginRoot
   $p = $plan[$srv]
-  if (-not (Test-Path -LiteralPath $scriptArg)) { Add-Result $srv 'script exists' $false $scriptArg $null; continue }
+  if (-not $Config -and -not (Test-Path -LiteralPath $scriptArg)) { Add-Result $srv 'script exists' $false $scriptArg $null; continue }
   $proc = $null
   try {
-    $proc = Start-McpServer $scriptArg
+    $proc = Start-McpServer $scriptArg $def
     # 1. initialize
     try {
       $r = Invoke-Rpc $proc 'initialize' @{ protocolVersion = '2024-11-05'; capabilities = @{}; clientInfo = @{ name = 'smoke-test'; version = '1' } }
