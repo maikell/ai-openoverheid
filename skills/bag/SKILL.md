@@ -32,13 +32,15 @@ A verblijfsobject can have several addresses (a main address and secondary addre
 1. **Pin down the address** with `bag_zoek_adres`, preferably by **postcode + house number** (exact). Free text ("Amstel 1 Amsterdam") returns candidates by relevance and can put a different address first (for example *Amstel 312A-1*). Always check street, house number and postcode.
 2. **Get the details** with `bag_adresinfo`: use, floor area and status of the unit, construction year and number of units of the building, all addresses of the object, and the neighbourhood, district and municipality codes.
 3. **Building only** with `bag_pand` if you have a building ID.
+4. **Zoning at the address** with `bag_plannen_op_adres` (postcode + house number, or RD coordinates): the bestemmingsplannen that apply, the enkelbestemming and dubbelbestemmingen, building plane and aanduidingen, with links to the rules. Source: PDOK Ruimtelijke plannen (the temporary part of the omgevingsplan); see the `omgevingsplan` skill for what is and is not included.
 
 Several addresses on one house number (e.g. `1-H`, `1-1`)? `bag_adresinfo` then returns the candidates; ask for or choose the right letter or addition.
 
 ## Linking with other skills
 
 - **Neighbourhood statistics:** the `buurtcode` and `wijkcode` from `bag_adresinfo` (e.g. `BU0363AF09`) can be used directly in the `cbs` skill (`WijkenEnBuurten` filter).
-- **Rules at the location:** use the coordinates with the `omgevingsplan` skill.
+- **Rules at the location:** `bag_plannen_op_adres`, and the `omgevingsplan` skill for amendments under the Omgevingswet.
+- **Everything about one address at once:** the `adresdossier` skill combines BAG, CBS, zoning, APV, permits, Woo, council documents and crime figures.
 - **Local rules:** the `lokale-regelgeving` skill, for example for the APV.
 
 ## Points of attention
@@ -54,7 +56,10 @@ Several addresses on one house number (e.g. `1-H`, `1-1`)? `bag_adresinfo` then 
 https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q=*&fq=type:adres&fq=postcode:1011PN&fq=huisnummer:1
 https://api.pdok.nl/kadaster/bag/ogc/v2/collections/verblijfsobject/items?f=json&identificatie=0363010012143319
 https://api.pdok.nl/kadaster/bag/ogc/v2/collections/pand/items?f=json&identificatie=0363100012186092
+https://service.pdok.nl/kadaster/ruimtelijke-plannen/wms/v1_0?service=WMS&version=1.3.0&request=GetFeatureInfo&layers=bestemmingsplangebied,enkelbestemming,dubbelbestemming&query_layers=bestemmingsplangebied,enkelbestemming,dubbelbestemming&crs=EPSG:28992&bbox={x-1},{y-1},{x+1},{y+1}&width=3&height=3&i=1&j=1&info_format=application/json&feature_count=50
 ```
+
+The last URL takes the RD coordinates (`centroide_rd`) from the Locatieserver.
 
 ## Why this skill was added (version 1.8.0)
 

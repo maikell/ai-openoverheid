@@ -1,7 +1,7 @@
 # JSON-RPC 2.0 Stdio MCP Server for Amsterdam Raadsinformatie (NotuBiz)
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $wc = New-Object System.Net.WebClient
-$wc.Headers.Add("User-Agent", "open-overheid-mcp/1.5 (+https://github.com/maikell/ai-openoverheid)")
+$wc.Headers.Add("User-Agent", "open-overheid-mcp/1.10 (+https://github.com/maikell/ai-openoverheid)")
 $wc.Headers.Add("Accept", "application/json")
 
 function Send-Response($id, $result, $error) {
@@ -52,6 +52,8 @@ while ($true) {
                                     description = "281 = Gemeenteraad, 1768 = B&W, 547 = Centrum, 977 = Noord, 1413 = West, 1424 = Zuid, 1425 = Oost, 2328 = Nieuw-West, 2122 = Zuidoost."
                                     default = 281
                                 }
+                                year = @{ type = "integer"; description = "Optional: meetings of this year (with month). Without year: recent and upcoming meetings." }
+                                month = @{ type = "integer"; description = "Optional with year: month 1-12." }
                             }
                         }
                     },
@@ -67,6 +69,24 @@ while ($true) {
                                 }
                             }
                             required = @("event_id")
+                        }
+                    },
+                    @{
+                        name = "archive_period"
+                        description = "Archive all past meetings of one organisation over a period, meeting by meeting (same folders, SHA-256 checks and versioning as archive_meeting). Meetings already archived are skipped. Handles at most max_meetings per call; call again to continue. Afterwards run archive_index (raadsarchief server) to make the documents searchable."
+                        inputSchema = @{
+                            type = "object"
+                            properties = @{
+                                organisation_id = @{ type = "integer"; description = "281 = Gemeenteraad, 2328 = Nieuw-West, see get_meetings." }
+                                from = @{ type = "string"; description = "First month, yyyy-mm." }
+                                to = @{ type = "string"; description = "Last month, yyyy-mm. Default: this month." }
+                                category = @{ type = "string"; description = "Optional part of the body name, e.g. 'Stadsdeelcommissie'." }
+                                root = @{ type = "string"; description = "Optional absolute base folder. Default: env OPEN_OVERHEID_ARCHIVE_ROOT, else Documents/Raadsinformatie." }
+                                max_meetings = @{ type = "integer"; description = "Meetings per call, 1-50 (default 3)."; default = 3 }
+                                recheck = @{ type = "boolean"; description = "Also check meetings that are already archived for changed documents."; default = $false }
+                                dry_run = @{ type = "boolean"; description = "Only list the meetings that would be archived."; default = $false }
+                            }
+                            required = @("organisation_id", "from")
                         }
                     },
                     @{
@@ -103,6 +123,15 @@ while ($true) {
                         $orgId = $tmp
                     }
                     $url = "https://api.notubiz.nl/organisations/$orgId/events"
+                    if ($null -ne $toolArgs.year -and [string]$toolArgs.year -ne "") {
+                        $yr = 0; $mo = 0
+                        if (-not [int]::TryParse([string]$toolArgs.year, [ref]$yr) -or $yr -lt 1990 -or $yr -gt 2100) { throw [System.ArgumentException]::new("Invalid year.") }
+                        $url += "?year=$yr"
+                        if ($null -ne $toolArgs.month -and [string]$toolArgs.month -ne "") {
+                            if (-not [int]::TryParse([string]$toolArgs.month, [ref]$mo) -or $mo -lt 1 -or $mo -gt 12) { throw [System.ArgumentException]::new("Invalid month: 1-12.") }
+                            $url += "&month=$mo"
+                        }
+                    }
                     $data = $wc.DownloadString($url)
                     Send-Response $id @{
                         content = @(
@@ -156,6 +185,44 @@ while ($true) {
                         )
                     } $null
                 }
+                elseif ($toolName -eq "archive_period") {
+                    $p = @{}
+                    $tmp = 0
+                    if (-not [int]::TryParse([string]$toolArgs.organisation_id, [ref]$tmp) -or $tmp -lt 1) { throw [System.ArgumentException]::new("Invalid organisation_id: expected a positive integer.") }
+                    $p.OrganisationId = $tmp
+                    foreach ($k in @("from", "to")) {
+                        $v = [string]$toolArgs.$k
+                        if ($v) {
+                            if ($v -notmatch '^\d{4}-\d{2}$') { throw [System.ArgumentException]::new("Invalid ${k}: use yyyy-mm.") }
+                            if ($k -eq "from") { $p.From = $v } else { $p.To = $v }
+                        }
+                    }
+                    if (-not $p.From) { throw [System.ArgumentException]::new("Give from (yyyy-mm).") }
+                    if ($toolArgs.category) {
+                        $cat = [string]$toolArgs.category
+                        if ($cat -notmatch '^[\p{L}\p{N} &.,()-]{1,80}$') { throw [System.ArgumentException]::new("Invalid category.") }
+                        $p.Category = $cat
+                    }
+                    $v = [string]$toolArgs.root
+                    if ($v) {
+                        if (-not [IO.Path]::IsPathRooted($v) -or $v -match '(^|[\\/])\.\.([\\/]|$)') { throw [System.ArgumentException]::new("Invalid root: give an absolute folder without '..'.") }
+                        $p.Root = $v
+                    } elseif ($env:OPEN_OVERHEID_ARCHIVE_ROOT) { $p.Root = $env:OPEN_OVERHEID_ARCHIVE_ROOT }
+                    $max = 3
+                    if ($null -ne $toolArgs.max_meetings -and [string]$toolArgs.max_meetings -ne "") {
+                        if (-not [int]::TryParse([string]$toolArgs.max_meetings, [ref]$max) -or $max -lt 1 -or $max -gt 50) { throw [System.ArgumentException]::new("Invalid max_meetings: 1-50.") }
+                    }
+                    $p.MaxMeetings = $max
+                    if ($toolArgs.recheck -eq $true) { $p.Recheck = $true }
+                    if ($toolArgs.dry_run -eq $true) { $p.WhatIfOnly = $true }
+                    $script = Join-Path $PSScriptRoot "../skills/amsterdam-notubiz/scripts/archive_period.ps1"
+                    $out = (& $script @p *>&1 | ForEach-Object { "$_" }) -join "`n"
+                    Send-Response $id @{
+                        content = @(
+                            @{ type = "text"; text = $out }
+                        )
+                    } $null
+                }
                 else {
                     Send-Response $id $null @{ code = -32601; message = "Tool not found: $toolName" }
                 }
@@ -165,6 +232,11 @@ while ($true) {
                     Send-Response $id $null @{ code = -32601; message = "Method not supported: $method" }
                 }
             }
+        }
+    }
+    catch [System.ArgumentException] {
+        if ($null -ne $id) {
+            Send-Response $id $null @{ code = -32602; message = $_.Exception.Message }
         }
     }
     catch {

@@ -1,7 +1,7 @@
 {
   "name": "open-overheid",
-  "description": "Toolkit for Dutch and Amsterdam open government data: addresses and buildings (BAG), local regulations in force (CVDR, e.g. the APV), CBS StatLine statistics and maps for every municipality, district and neighbourhood, council meetings and documents (NotuBiz), zoning plans (PDOK/KOOP), court rulings (ECLI), official publications (KOOP SRU), Amsterdam key figures (BBGA), Woo/FOI decisions (open.amsterdam) and the Amsterdam subsidy register. Works with Gemini (Antigravity) and Claude.",
-  "version": "1.9.1",
+  "description": "Toolkit for Dutch and Amsterdam open government data: addresses and buildings (BAG), local regulations in force (CVDR, e.g. the APV), CBS StatLine statistics and maps for every municipality, district and neighbourhood, council meetings and documents (NotuBiz) with a local search index across years and motion tracking, zoning plans at an address (PDOK/KOOP), court rulings (ECLI), official publications (KOOP SRU), Amsterdam key figures (BBGA), Woo/FOI decisions (open.amsterdam) and the Amsterdam subsidy register, combined into an address dossier on request. Works with Gemini (Antigravity) and Claude.",
+  "version": "1.10.0",
   "suggestedPrompts": [
     "Wat zijn de omgevingsplanregels en vergunningen op Amstel 1 Amsterdam?",
     "Welke subsidies zijn er verleend door de Gemeente Amsterdam in Stadsdeel Nieuw-West?",
@@ -9,6 +9,9 @@
     "Wat staat er op de agenda van de eerstvolgende vergadering van Stadsdeel Nieuw-West?",
     "Vergelijk het aantal inwoners van 65 jaar of ouder in Osdorp met heel Amsterdam (CBS).",
     "Wat zegt de APV van Amsterdam over terrassen?",
-    "Wat is het bouwjaar en gebruiksdoel van Amstel 1 in Amsterdam?"
+    "Wat is het bouwjaar en gebruiksdoel van Amstel 1 in Amsterdam?",
+    "Maak een adresdossier voor Amstel 1 in Amsterdam.",
+    "Wanneer kwam de Meervaart voor het eerst langs in de Stadsdeelcommissie Nieuw-West?",
+    "Welke moties over afval zijn er sinds 2024 in de gemeenteraad ingediend en wat is ermee gebeurd?"
   ]
 }

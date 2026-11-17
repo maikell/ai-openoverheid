@@ -95,7 +95,11 @@ Document URLs in the agenda have the form `https://api.notubiz.nl/document/{docu
 
 ## 3. MCP tools
 
-The `amsterdam-raadsinformatie` MCP server offers `get_meetings` (by organisation ID, default 281) and `get_meeting_agenda` (by event ID). Both accept positive integers only.
+The `amsterdam-raadsinformatie` MCP server offers `get_meetings` (by organisation ID, default 281; with `year` and optionally `month` for past meetings, e.g. `year: 2023, month: 3`) and `get_meeting_agenda` (by event ID). Both accept positive integers only. `archive_meeting` and `archive_period` save documents locally (see the `amsterdam-notubiz` skill).
+
+Without the MCP server, past meetings are listed with `GET https://api.notubiz.nl/organisations/{id}/events?year=2023&month=3` (header `Accept: application/json`); without `year` the API only returns recent and upcoming meetings.
+
+**Motions and amendments** with their outcome are in a separate NotuBiz module: `GET https://api.notubiz.nl/organisations/{id}/modules/6/items?format=json&limit=250&start=0` (paged with `start`, oldest first, no keyword filter). The `raadsarchief` skill caches and searches them (`motions_sync`, `motions_search`). Nieuw-West and Centrum do not use this module. For search across years in documents, use the `raadsarchief` skill.
 
 To download and archive all documents of a meeting into a local folder, use `archive_meeting` from the same server; see the `amsterdam-notubiz` skill.
 

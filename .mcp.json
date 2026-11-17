@@ -59,6 +59,16 @@
         "-File",
         "${CLAUDE_PLUGIN_ROOT}/mcp/bag_mcp.ps1"
       ]
+    },
+    "raadsarchief": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${CLAUDE_PLUGIN_ROOT}/mcp/raadsarchief_mcp.ps1"
+      ]
     }
   }
 }

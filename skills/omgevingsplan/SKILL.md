@@ -46,6 +46,22 @@ Write-Output "Neighbourhood code: $($doc.buurtcode)"
 
 ---
 
+## 1b. Plans and land-use designations at a point (no key)
+
+The MCP tool `bag_plannen_op_adres` (server `bag`) answers "which plan and which bestemming apply here" for a postcode + house number or RD coordinates. It queries the PDOK **Ruimtelijke plannen** WMS (Kadaster, CC0) with `GetFeatureInfo` on the layers `bestemmingsplangebied`, `enkelbestemming`, `dubbelbestemming`, `bouwvlak`, `bouwaanduiding`, `functieaanduiding`, `gebiedsaanduiding` and `maatvoering`, and returns per plan its name, status, date, IMRO id and links to the rules and the adoption decision.
+
+```
+https://service.pdok.nl/kadaster/ruimtelijke-plannen/wms/v1_0?service=WMS&version=1.3.0&request=GetFeatureInfo
+  &layers=bestemmingsplangebied,enkelbestemming,dubbelbestemming&query_layers=bestemmingsplangebied,enkelbestemming,dubbelbestemming
+  &crs=EPSG:28992&bbox={x-1},{y-1},{x+1},{y+1}&width=3&height=3&i=1&j=1&info_format=application/json&feature_count=50
+```
+
+What this does and does not cover:
+
+- It covers the plans published on ruimtelijkeplannen.nl under the Wro: the **temporary part** of the omgevingsplan, including paraplu-plannen (in Amsterdam e.g. *Winkeldiversiteit Centrum*, *Darkstores*, *Datacenters*), which apply next to the main plan. Draft plans (`planstatus: ontwerp`) are included and marked.
+- PDOK updates this data about twice a year.
+- It does **not** cover amendments under the Omgevingswet (new part, since 2024) or the *bruidsschat*. For the current legally binding picture, always refer to *Regels op de kaart* (`https://omgevingswet.overheid.nl/regels-op-de-kaart`).
+
 ## 2. Publications and amendments via KOOP SRU
 
 All official publications of omgevingsplannen, preparatory decisions and amendments are published through the KOOP Open Data SRU endpoint.

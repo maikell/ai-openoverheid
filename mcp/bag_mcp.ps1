@@ -4,8 +4,11 @@
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $locBase = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free"
 $bagBase = "https://api.pdok.nl/kadaster/bag/ogc/v2/collections"
-$userAgent = "open-overheid-mcp/1.8 (+https://github.com/maikell/ai-openoverheid)"
+$userAgent = "open-overheid-mcp/1.10 (+https://github.com/maikell/ai-openoverheid)"
 $locFields = "weergavenaam,adresseerbaarobject_id,nummeraanduiding_id,straatnaam,huisnummer,huisletter,huisnummertoevoeging,postcode,woonplaatsnaam,gemeentecode,gemeentenaam,wijkcode,wijknaam,buurtcode,buurtnaam,centroide_ll,centroide_rd,score"
+
+$rpBase = "https://service.pdok.nl/kadaster/ruimtelijke-plannen/wms/v1_0"
+$rpLayers = "bestemmingsplangebied,enkelbestemming,dubbelbestemming,bouwvlak,bouwaanduiding,functieaanduiding,gebiedsaanduiding,maatvoering"
 
 $postcodePattern = '^\d{4}\s?[A-Za-z]{2}$'
 $bagIdPattern    = '^\d{16}$'
@@ -68,6 +71,42 @@ function Format-Pand($p) {
     }
 }
 
+# Spatial plans (Wro: bestemmingsplannen, the temporary part of the omgevingsplan) at one RD point
+function Get-PlansAt([double]$x, [double]$y) {
+    $inv = [Globalization.CultureInfo]::InvariantCulture
+    $bbox = "{0},{1},{2},{3}" -f ($x - 1).ToString($inv), ($y - 1).ToString($inv), ($x + 1).ToString($inv), ($y + 1).ToString($inv)
+    $url = "$rpBase`?service=WMS&version=1.3.0&request=GetFeatureInfo&layers=$rpLayers&query_layers=$rpLayers&crs=EPSG:28992&bbox=$bbox&width=3&height=3&i=1&j=1&info_format=application/json&feature_count=100"
+    return (Get-Json $url)
+}
+
+function Format-Plans($json) {
+    $plans = @(); $enkel = @(); $dubbel = @(); $aand = @()
+    foreach ($f in @($json.features)) {
+        if ($null -eq $f) { continue }
+        $p = $f.properties
+        if ([string]$p.historisch -eq "1") { continue }
+        $layer = ([string]$f.id).Split(".")[0]
+        $link = (([string]$p.verwijzingnaartekst) -split ",")[0]
+        if ($layer -eq "bestemmingsplangebied") {
+            $plans += [pscustomobject][ordered]@{ naam = $p.naam; type = $p.typeplan; planstatus = $p.planstatus; dossierstatus = $p.dossierstatus
+                datum = $p.datum; id = $p.identificatie; regels = $link; besluit = $p.verwijzingnaarvaststellingsbesluit
+                viewer = "https://ruimtelijkeplannen.nl/viewer/view?planidn=$($p.identificatie)" }
+        } elseif ($layer -eq "enkelbestemming") {
+            $enkel += [pscustomobject][ordered]@{ bestemming = $p.naam; hoofdgroep = $p.bestemmingshoofdgroep; plan = $p.plangebied; datum = $p.datum; regels = $link }
+        } elseif ($layer -eq "dubbelbestemming") {
+            $dubbel += [pscustomobject][ordered]@{ bestemming = $p.naam; plan = $p.plangebied; datum = $p.datum; regels = $link }
+        } else {
+            $aand += [pscustomobject][ordered]@{ soort = $layer; naam = $p.naam; plan = $p.plangebied; regels = $link }
+        }
+    }
+    return [ordered]@{
+        plannen = @($plans | Sort-Object datum -Descending)
+        enkelbestemmingen = @($enkel | Sort-Object datum -Descending)
+        dubbelbestemmingen = @($dubbel)
+        aanduidingen = @($aand | Where-Object { $_.naam -or $_.soort -eq "bouwvlak" })
+    }
+}
+
 function Get-PandenFromVbo($vbo) {
     $out = @()
     foreach ($href in @($vbo.properties.'pand.href')) {
@@ -116,6 +155,18 @@ while ($true) {
                             huisletter = @{ type = "string" }
                             toevoeging = @{ type = "string" }
                             verblijfsobject_id = @{ type = "string"; description = "16 cijfers, bijv. 0363010012143319." }
+                        } }
+                    },
+                    @{
+                        name = "bag_plannen_op_adres"
+                        description = "Ruimtelijke plannen (Wro) op een adres of RD-punt: bestemmingsplannen en paraplu-plannen, enkel- en dubbelbestemmingen, bouwvlak en aanduidingen, met links naar de regels. Dit is het tijdelijke deel van het omgevingsplan (bron PDOK Ruimtelijke plannen, CC0, 2x per jaar bijgewerkt). Wijzigingen onder de Omgevingswet (nieuw deel, sinds 2024) staan hier niet in: verwijs daarvoor naar Regels op de kaart."
+                        inputSchema = @{ type = "object"; properties = @{
+                            postcode = @{ type = "string" }
+                            huisnummer = @{ type = "integer" }
+                            huisletter = @{ type = "string" }
+                            toevoeging = @{ type = "string" }
+                            rd_x = @{ type = "number"; description = "RD-coordinaat x (EPSG:28992), in plaats van een adres." }
+                            rd_y = @{ type = "number"; description = "RD-coordinaat y (EPSG:28992)." }
                         } }
                     },
                     @{
@@ -188,6 +239,26 @@ while ($true) {
                         coordinaten = $(if ($loc) { [ordered]@{ wgs84 = $loc.centroide_ll; rd = $loc.centroide_rd } })
                         bron = "BAG via PDOK (Kadaster), Public Domain Mark 1.0"
                     }
+                    Send-Text $id ($out | ConvertTo-Json -Depth 6)
+                }
+                elseif ($toolName -eq "bag_plannen_op_adres") {
+                    $adres = $null
+                    $inv = [Globalization.CultureInfo]::InvariantCulture
+                    $x = 0.0; $y = 0.0
+                    if ($null -ne $a.rd_x -and $null -ne $a.rd_y) {
+                        if (-not [double]::TryParse([string]$a.rd_x, [Globalization.NumberStyles]::Float, $inv, [ref]$x) -or -not [double]::TryParse([string]$a.rd_y, [Globalization.NumberStyles]::Float, $inv, [ref]$y) -or $x -lt 0 -or $x -gt 300000 -or $y -lt 289000 -or $y -gt 629000) { Fail "Ongeldige RD-coordinaten." }
+                    } elseif ($a.postcode) {
+                        $docs = Search-Address (Get-AddressFilter $a) "*" 1
+                        if ($docs.Count -eq 0) { Fail "Adres niet gevonden in de BAG." }
+                        $adres = $docs[0].weergavenaam
+                        if ([string]$docs[0].centroide_rd -notmatch 'POINT\(([0-9.]+) ([0-9.]+)\)') { Fail "Geen coordinaten voor dit adres." }
+                        $x = [double]::Parse($Matches[1], $inv); $y = [double]::Parse($Matches[2], $inv)
+                    } else { Fail "Geef postcode + huisnummer of rd_x + rd_y." }
+                    $out = [ordered]@{ adres = $adres; rd = "$($x.ToString($inv)), $($y.ToString($inv))" }
+                    $res = Format-Plans (Get-PlansAt $x $y)
+                    foreach ($k in $res.Keys) { $out[$k] = $res[$k] }
+                    $out.let_op = "Tijdelijk deel van het omgevingsplan (Wro-plannen op ruimtelijkeplannen.nl). Paraplu-plannen gelden naast het hoofdplan. Omgevingswet-wijzigingen sinds 2024 en de bruidsschat: zie Regels op de kaart (omgevingswet.overheid.nl). Informatie, geen juridisch advies."
+                    $out.bron = "PDOK Ruimtelijke plannen (Kadaster), CC0"
                     Send-Text $id ($out | ConvertTo-Json -Depth 6)
                 }
                 elseif ($toolName -eq "bag_pand") {

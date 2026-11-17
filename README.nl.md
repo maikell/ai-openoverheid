@@ -2,7 +2,7 @@
 
 [English](README.md) · **Nederlands**
 
-Skills en MCP-servers waarmee een AI-assistent rechtstreeks werkt met Nederlandse en Amsterdamse open overheidsdata: adressen en gebouwen (BAG), geldende lokale regelgeving (CVDR), landelijke statistiek (CBS), raadsvergaderingen en raadsstukken, omgevingsplannen, rechterlijke uitspraken, officiële bekendmakingen, buurtstatistieken, Woo-besluiten en het subsidieregister.
+Skills en MCP-servers waarmee een AI-assistent rechtstreeks werkt met Nederlandse en Amsterdamse open overheidsdata: adressen en gebouwen (BAG), geldende lokale regelgeving (CVDR), landelijke statistiek (CBS), raadsvergaderingen en raadsstukken (met een lokale zoekindex over jaren en het volgen van moties), omgevingsplannen op een adres, rechterlijke uitspraken, officiële bekendmakingen, buurtstatistieken, Woo-besluiten en het subsidieregister. Eén skill bundelt ze tot een dossier voor één adres.
 
 De toolkit is **AI-agnostisch**. Hij is gebouwd op twee open formaten, zodat dezelfde bestanden met verschillende assistenten werken:
 
@@ -11,7 +11,7 @@ De toolkit is **AI-agnostisch**. Hij is gebouwd op twee open formaten, zodat dez
 
 Alle bronnen zijn openbaar. Je hebt geen API-sleutels of accounts nodig.
 
-![Overzicht van de toolkit: zes MCP-servers met skills (Raadsinformatie met archive_meeting voor Amsterdam en Stadsdeel Nieuw-West, Woo-besluiten, Subsidieregister, CBS StatLine, Lokale regelgeving, BAG) en vier REST-skills (Omgevingsplan, Rechtspraak, Officiële Bekendmakingen, Amsterdam Kerncijfers), te gebruiken in Google Antigravity en Claude](docs/architecture-v2.png)
+![Overzicht van de toolkit: zeven MCP-servers met skills (Raadsinformatie met archive_meeting en archive_period, Raadsarchief met lokaal zoeken en moties, Woo-besluiten, Subsidieregister, CBS StatLine, Lokale regelgeving, BAG met bestemmingsplannen op een adres), de skill adresdossier die ze combineert en vier REST-skills (Omgevingsplan, Rechtspraak, Officiële Bekendmakingen, Amsterdam Kerncijfers), te gebruiken in Google Antigravity en Claude](docs/architecture-v2.png)
 
 ## ✅ Ondersteunde omgevingen
 
@@ -33,7 +33,7 @@ Zonder MCP-servers werken de skills ook: ze beschrijven de onderliggende API's, 
 | :--- | :--- | :--- |
 | `amsterdam-subsidies` | Doorzoeken en optellen van het Openbaar Subsidieregister (bedragen, aanvragers, clusters). | Datapunt Amsterdam (CSV-stream) + MCP-server |
 | `amsterdam-woo` | Zoeken in Woo- en Wob-besluiten en ophalen van de PDF's. | Memorix Mediabank (`open.amsterdam`) + MCP-server |
-| `bag` | Adressen en gebouwen: officieel adres, gebruiksdoel, oppervlakte, bouwjaar, aantal verblijfsobjecten en CBS-gebiedscodes. | PDOK Locatieserver + BAG OGC API + MCP-server |
+| `bag` | Adressen en gebouwen: officieel adres, gebruiksdoel, oppervlakte, bouwjaar, aantal verblijfsobjecten, CBS-gebiedscodes, en de bestemmingsplannen en bestemmingen op het adres. | PDOK Locatieserver + BAG OGC API + PDOK Ruimtelijke plannen + MCP-server |
 | `omgevingsplan` | Adres naar coördinaten/perceel, en planregels onder de Omgevingswet. | PDOK Locatieserver, KOOP SRU |
 | `rechtspraak` | Zoeken en lezen van uitspraken via ECLI. | `data.rechtspraak.nl` |
 | `officiele-bekendmakingen` | Gemeentebladen, Staatscourant, vergunningen en regelgeving. | KOOP SRU 1.2 |
@@ -41,7 +41,9 @@ Zonder MCP-servers werken de skills ook: ze beschrijven de onderliggende API's, 
 | `amsterdam-kerncijfers` | Wijk- en buurtstatistieken (BBGA). | Onderzoek & Statistiek Amsterdam |
 | `cbs` | Statistieken voor elke gemeente, wijk en buurt in Nederland (bevolking, inkomen, wonen, voorzieningen), om gebieden te vergelijken en buurtkaarten te maken zonder kaartdienst. Uitleg in `references/cbs-statline.md`. | CBS StatLine OData v4 (`datasets.cbs.nl`) + MCP-server |
 | `raadsinformatie` | Vergaderingen van gemeenteraad en stadsdeelcommissies, agenda's, moties, brieven en verslagen, met directe PDF-links. | NotuBiz API (`amsterdam.raadsinformatie.nl`) + MCP-server |
-| `amsterdam-notubiz` | De agenda en alle stukken van één vergadering downloaden en archiveren in een lokale map, gecontroleerd met SHA-256, met versienummers voor gewijzigde stukken en een README per vergadering. | NotuBiz API + PowerShell-script + MCP-tool `archive_meeting` |
+| `amsterdam-notubiz` | De agenda en alle stukken van één vergadering, of van alle vergaderingen in een periode, downloaden en archiveren in lokale mappen, gecontroleerd met SHA-256, met versienummers voor gewijzigde stukken en een README per vergadering. | NotuBiz API + PowerShell-scripts + MCP-tools `archive_meeting`, `archive_period` |
+| `raadsarchief` | Zoeken in je eigen archief van raads- en stadsdeelstukken over jaren heen (eerste vermelding, tijdlijn per jaar, documenten met fragment en pagina) en moties en amendementen volgen met uitslag en stemverklaring. | Lokale zoekindex + NotuBiz-module Moties + MCP-server |
+| `adresdossier` | Eén adres erin, één dossier eruit: BAG, CBS-buurtcijfers, bestemmingsplan op de locatie, vergunningen, APV, Woo-besluiten, raadsstukken en geregistreerde misdrijven. Stuurt de andere skills aan. | Alle bronnen hierboven (+ optioneel de plugin `politie-misdrijven`) |
 
 ### MCP-tools
 
@@ -49,16 +51,18 @@ Zonder MCP-servers werken de skills ook: ze beschrijven de onderliggende API's, 
 | :--- | :--- |
 | `amsterdam-woo` | `search_woo_decisions`, `get_woo_document` |
 | `amsterdam-subsidies` | `search_subsidies`, `get_subsidies_summary` |
-| `amsterdam-raadsinformatie` | `get_meetings`, `get_meeting_agenda`, `archive_meeting` |
+| `amsterdam-raadsinformatie` | `get_meetings`, `get_meeting_agenda`, `archive_meeting`, `archive_period` |
+| `raadsarchief` | `archive_index`, `archive_search`, `motions_sync`, `motions_search` |
 | `cbs` | `cbs_search_tables`, `cbs_get_table_info`, `cbs_find_codes`, `cbs_get_observations` |
 | `lokale-regelgeving` | `lr_zoek_regelingen`, `lr_inhoudsopgave`, `lr_artikel` |
-| `bag` | `bag_zoek_adres`, `bag_adresinfo`, `bag_pand` |
+| `bag` | `bag_zoek_adres`, `bag_adresinfo`, `bag_plannen_op_adres`, `bag_pand` |
 
 ## 📁 Opbouw
 
 ```
 skills/<naam>/SKILL.md            De skills (gedeeld door alle omgevingen)
-mcp/*.ps1                         Zes MCP-servers (stdio, PowerShell)
+mcp/*.ps1                         Zeven MCP-servers (stdio, PowerShell)
+tests/smoke_test.ps1              Rooktest voor alle MCP-servers
 rules/AGENTS.md                   Algemene richtlijnen (Antigravity laadt dit automatisch)
 plugin.json                       Pluginbeschrijving voor Antigravity
 mcp_config.example.json           MCP-voorbeeldconfiguratie voor Antigravity
@@ -72,6 +76,7 @@ mcp_config.example.json           MCP-voorbeeldconfiguratie voor Antigravity
 - **Skills:** niets extra's; ze werken op Windows, macOS en Linux.
 - **MCP-servers:** PowerShell. Windows heeft dit standaard (`powershell.exe`). Op macOS/Linux installeer je [PowerShell 7](https://learn.microsoft.com/powershell/scripting/install/installing-powershell) (`pwsh`), zie [Aanpassen voor jouw computer](#-aanpassen-voor-jouw-computer).
 - **Script `amsterdam_kerncijfers.mjs`** (optioneel): Node.js 18 of nieuwer.
+- **`pdftotext`** (optioneel, uit Poppler, Xpdf of Git for Windows): betere PDF-tekst voor de zoekindex van `raadsarchief`. Zonder dit programma gebruikt de index een ingebouwde PowerShell-lezer. Geen van beide doet OCR.
 
 ---
 
@@ -149,7 +154,7 @@ MCP-servers draaien niet in de webapp; de skills roepen de API's dan zelf aan. C
 ### Andere agents en modellen
 
 - **Skills:** elke agent die `SKILL.md`-mappen laadt, kan `skills/` direct gebruiken. Voor agents zonder skill-ondersteuning gebruik je de `SKILL.md`-bestanden en `rules/AGENTS.md` als gewone instructies of context.
-- **MCP-servers:** registreer de twee scripts als stdio-servers in de MCP-configuratie van je client, bijvoorbeeld:
+- **MCP-servers:** registreer de scripts als stdio-servers in de MCP-configuratie van je client, bijvoorbeeld:
 
   ```json
   {
@@ -177,6 +182,10 @@ MCP-servers draaien niet in de webapp; de skills roepen de API's dan zelf aan. C
       "bag": {
         "command": "powershell.exe",
         "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<pad-naar-repo>/mcp/bag_mcp.ps1"]
+      },
+      "raadsarchief": {
+        "command": "powershell.exe",
+        "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "<pad-naar-repo>/mcp/raadsarchief_mcp.ps1"]
       }
     }
   }
@@ -192,9 +201,30 @@ MCP-servers draaien niet in de webapp; de skills roepen de API's dan zelf aan. C
 | **macOS of Linux** | Vervang `"powershell.exe"` door `"pwsh"` in `.mcp.json` (Claude) of `mcp_config.json` (Antigravity). Gebruik in Antigravity een pad als `/Users/<naam>/.gemini/config/plugins/open-overheid/mcp/subsidies_mcp.ps1`. |
 | **Memorix-sleutel gewijzigd** | De Woo-server gebruikt de publieke sleutel die open.amsterdam zelf gebruikt. Verandert die, zet dan de omgevingsvariabele `MEMORIX_API_KEY`; de actuele sleutel vind je in de netwerkverzoeken van `open.amsterdam/woo-zoeken`. |
 | **Cache van subsidies** | De server bewaart de CSV maximaal 12 uur in de map `antigravity_subsidies` in de tijdelijke map van het systeem (Windows: `%TEMP%`). Verwijder die map om direct te verversen. |
+| **Archiefmap** | `archive_meeting`, `archive_period` en de `raadsarchief`-tools gebruiken `Documenten/Raadsinformatie`, tenzij je de omgevingsvariabele `OPEN_OVERHEID_ARCHIVE_ROOT` zet (of `root` meegeeft). De zoekindex en de motiecache staan in `_index/` in die map; verwijder die map om alles opnieuw op te bouwen. |
 | **ExecutionPolicy** | De servers starten met `-ExecutionPolicy Bypass` omdat de scripts niet ondertekend zijn. Dat geldt alleen voor dit proces. Lees de scripts als je ze van een derde krijgt. |
 
 Bestanden zijn UTF-8 zonder BOM. Houd de `.ps1`-bestanden ASCII (geen accenten), anders toont Windows PowerShell 5.1 tekens verkeerd.
+
+---
+
+## 🩺 De MCP-servers testen
+
+`tests/smoke_test.ps1` start elke server uit `.mcp.json` zoals een client dat doet en controleert `initialize`, `tools/list` (verwachte tools, volledige definities), de foutcodes bij een onbekende tool en bij ongeldige invoer, en per server een of twee echte aanroepen naar de live bronnen. De `raadsarchief`-server wordt getest op een tijdelijk mini-archief.
+
+```powershell
+# Windows, vanuit de pluginmap: alles, inclusief live aanroepen
+powershell -NoProfile -ExecutionPolicy Bypass -File tests\smoke_test.ps1
+
+# Zonder netwerk, of voor een of meer servers
+powershell -NoProfile -ExecutionPolicy Bypass -File tests\smoke_test.ps1 -Offline
+powershell -NoProfile -ExecutionPolicy Bypass -File tests\smoke_test.ps1 -Server bag,raadsarchief
+
+# macOS/Linux
+pwsh tests/smoke_test.ps1 -Shell pwsh
+```
+
+Je krijgt een tabel met PASS/FAIL per controle; de exitcode is 1 als er iets mislukt (`-JsonReport <bestand>` schrijft de resultaten als JSON). Draai hem na een update van de plugin, of als een tool niet meer antwoordt.
 
 ---
 
@@ -209,6 +239,9 @@ Bestanden zijn UTF-8 zonder BOM. Houd de `.ps1`-bestanden ASCII (geen accenten),
 - *"Vergelijk het aandeel inwoners van 65 jaar of ouder in Osdorp met heel Amsterdam (CBS)."*
 - *"Wat zegt de APV van Amsterdam over terrassen?"*
 - *"Wat is het bouwjaar en gebruiksdoel van Amstel 1 in Amsterdam?"*
+- *"Maak een adresdossier voor Amstel 1 in Amsterdam."*
+- *"Archiveer alle vergaderingen van de Stadsdeelcommissie Nieuw-West sinds 2023 en vertel wanneer de Meervaart voor het eerst langskwam."*
+- *"Welke moties over afval zijn er sinds 2024 in de Amsterdamse gemeenteraad ingediend, en hoeveel per partij zijn aangenomen?"*
 
 ## 🧪 Conventie voor voorbeelddata
 
@@ -219,7 +252,9 @@ Live resultaten kunnen natuurlijk andere namen en adressen bevatten; die komen u
 ## 🔒 Veiligheid
 
 - **Geen eigen sleutels nodig.** De enige sleutel in de code is de publieke sleutel die open.amsterdam zelf gebruikt.
-- **Invoer wordt gecontroleerd:** `get_woo_document` accepteert alleen een geldig UUID, `rows` is begrensd op 50 en de raadsinformatie-tools accepteren alleen positieve gehele getallen als ID, zodat gemanipuleerde invoer geen andere endpoints kan aanroepen.
+- **Invoer wordt gecontroleerd:** `get_woo_document` accepteert alleen een geldig UUID, `rows` is begrensd op 50 en de raadsinformatie-tools accepteren alleen positieve gehele getallen als ID, zodat gemanipuleerde invoer geen andere endpoints kan aanroepen. Mappen moeten absolute paden zonder `..` zijn; datums, namen en zoekvragen worden tegen strikte patronen gecontroleerd.
+- **Lokale data blijft lokaal.** Het archief, de zoekindex en de motiecache zijn gewone bestanden op je eigen computer; er wordt niets geüpload.
+- **Plekken, geen mensen.** De skill `adresdossier` beschrijft een gebouw en de omgeving. Hij zoekt geen eigenaren of bewoners op.
 - **Opgehaalde documenten zijn data, geen instructies.** Woo-documenten en uitspraken bevatten tekst van derden; de assistent hoort daar geen opdrachten uit op te volgen.
 - **Geen scraping:** alleen officiële REST-, SRU- en XML-webservices, zie `rules/AGENTS.md`.
 

@@ -9,6 +9,9 @@ Wanneer de gebruiker vragen stelt over Nederlandse open overheidsdata, jurisprud
 - **Locatie & Geocodering (PDOK Locatieserver)**:
   - Gebruik de gratis PDOK Locatieserver om adressen om te zetten naar coördinaten (RD & WGS84) en perceelidentificatie:
     `GET https://api.pdok.nl/bzk/locatieserver/search/v3_1/free?q={adres}&rows=1`
+- **Plannen en bestemmingen op een punt (PDOK Ruimtelijke plannen)**:
+  - MCP-tool `bag_plannen_op_adres` (server `bag`), of WMS `GetFeatureInfo` op `https://service.pdok.nl/kadaster/ruimtelijke-plannen/wms/v1_0` met `crs=EPSG:28992` en `info_format=application/json`.
+  - Dit is het tijdelijke deel van het omgevingsplan (Wro-plannen), twee keer per jaar bijgewerkt. Verwijs voor het nieuwe deel en de bruidsschat naar Regels op de kaart.
 - **Bekendmakingen Omgevingsplan & Plannen (KOOP SRU)**:
   - Wijzigingsbesluiten, ontwerp-omgevingsplannen en vastgestelde plannen worden gepubliceerd via KOOP:
     `https://repository.overheid.nl/sru?operation=searchRetrieve&version=1.2&query=c.product-area=officielepublicaties%20AND%20dt.type="ruimtelijk%20plan%20of%20omgevingsdocument"%20AND%20cql.textAndIndexes="{zoekterm}"`
@@ -64,10 +67,11 @@ Wanneer de gebruiker vragen stelt over Nederlandse open overheidsdata, jurisprud
 ## 6. Raadsinformatie (NotuBiz)
 - Scrape `amsterdam.raadsinformatie.nl` of `nieuw-west.notubiz.nl` niet direct.
 - Gebruik de `amsterdam-raadsinformatie` MCP-server (`get_meetings`, `get_meeting_agenda`) of de NotuBiz REST API met header `Accept: application/json`:
-  - **Vergaderingen per orgaan**: `GET https://api.notubiz.nl/organisations/{id}/events`
+  - **Vergaderingen per orgaan**: `GET https://api.notubiz.nl/organisations/{id}/events` (oudere vergaderingen: `?year=JJJJ&month=M`)
+  - **Moties en amendementen met uitslag**: `GET https://api.notubiz.nl/organisations/{id}/modules/6/items?format=json&limit=250&start=0` (pagineren met `start`)
   - **Agenda en documenten**: `GET https://api.notubiz.nl/events/{event_id}`
   - **Document (PDF)**: `GET https://api.notubiz.nl/document/{document_id}/{versie}`
-- Alle stukken van een vergadering downloaden en archiveren (met SHA-256-controle en versienummers): skill `amsterdam-notubiz`; MCP-tool `archive_meeting` (server `amsterdam-raadsinformatie`) of het script `skills/amsterdam-notubiz/scripts/archive_meeting.ps1`.
+- Alle stukken van een vergadering downloaden en archiveren (met SHA-256-controle en versienummers): skill `amsterdam-notubiz`; MCP-tool `archive_meeting` (server `amsterdam-raadsinformatie`) of het script `skills/amsterdam-notubiz/scripts/archive_meeting.ps1`. Een hele periode: MCP-tool `archive_period` of `archive_period.ps1`; doe eerst een dry run en meld het aantal vergaderingen.
 - Organisatie-ID's: `281` Gemeenteraad Amsterdam, `2328` Stadsdeel Nieuw-West (zie de skill `raadsinformatie` voor de overige stadsdelen).
 
 ---
@@ -99,7 +103,21 @@ Wanneer de gebruiker vragen stelt over Nederlandse open overheidsdata, jurisprud
 ---
 
 ## 10. BAG (adressen en gebouwen)
-- Gebruik voor adressen, gebruiksdoel, oppervlakte, bouwjaar en aantal verblijfsobjecten de skill `bag` en de MCP-server `bag` (`bag_zoek_adres`, `bag_adresinfo`, `bag_pand`).
+- Gebruik voor adressen, gebruiksdoel, oppervlakte, bouwjaar en aantal verblijfsobjecten de skill `bag` en de MCP-server `bag` (`bag_zoek_adres`, `bag_adresinfo`, `bag_plannen_op_adres`, `bag_pand`).
 - Zoek bij voorkeur exact op postcode + huisnummer via de PDOK Locatieserver (`fq=postcode:..&fq=huisnummer:..`); vrije tekst kan een ander adres als eerste geven, dus controleer het resultaat.
 - Details via de PDOK BAG OGC API: `https://api.pdok.nl/kadaster/bag/ogc/v2/collections/{verblijfsobject|pand}/items?f=json&identificatie=...`.
 - De BAG bevat geen eigenaren of bewoners; koppel BAG-gegevens niet aan personen.
+
+---
+
+## 11. Raadsarchief (zoeken over jaren, moties en stemmingen)
+- Vragen over meerdere jaren raads- of stadsdeelstukken ("sinds wanneer", "hoe vaak", "eerste keer") beantwoord je met de skill `raadsarchief` en de MCP-server `raadsarchief` (`archive_index`, `archive_search`), op het lokale archief van `archive_meeting`/`archive_period`.
+- Noem altijd de periode die het lokale archief dekt; een jaar met weinig documenten in de index zegt niets over hoe vaak iets besproken is (zie `coverage` bij `mode: timeline`).
+- Moties en amendementen: `motions_sync` en `motions_search`. Nieuw-West (`2328`) en Centrum (`547`) registreren geen moties in NotuBiz; zoek daar in de gearchiveerde stukken met `doc_type: motie` en lees de uitslag in de besluitenlijst.
+- Verzin geen stemgedrag: als het veld `stemming` leeg is, zeg dat en verwijs naar de besluitenlijst of stemmingsuitslagen.
+
+---
+
+## 12. Adresdossier
+- Voor "alles over dit adres": skill `adresdossier`. Volgorde: BAG (codes en coördinaten) → CBS → bestemmingsplan → bekendmakingen → APV → Woo → raadsstukken → misdrijven (plugin `politie-misdrijven`, optioneel).
+- Het dossier gaat over een plek, niet over personen: zoek geen eigenaren, bewoners of huurders op en laat namen van privépersonen weg.

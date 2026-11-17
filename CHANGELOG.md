@@ -2,6 +2,29 @@
 
 All notable changes to the AI Open Overheid Toolkit.
 
+## 1.10.0 – 2026-11-17
+
+### Added
+- **`raadsarchief` skill and MCP server** (`archive_index`, `archive_search`, `motions_sync`, `motions_search`), with the shared logic in `skills/raadsarchief/scripts/raadsarchief_lib.ps1` and a command line in `raadsarchief.ps1`.
+  - `archive_index` builds an incremental full-text index in `<archive>/_index/` over the meeting folders written by `archive_meeting` (Markdown agendas, PDF, DOCX, HTML). It uses `pdftotext` when installed and otherwise a built-in PDF reader in PowerShell (Flate and ASCII85 streams, object streams, ToUnicode CMaps, form XObjects; no OCR). Calls stop after a time budget and report what is left.
+  - `archive_search` has three modes: `documents` (snippet and page), `first` (first mention, oldest meeting first) and `timeline` (documents and meetings per year or month, with index coverage per period so a quiet year is not mistaken for absence).
+  - `motions_sync` and `motions_search` cache and search the NotuBiz motions module: outcome, submitters, parties, linked meeting and vote text, with counts per outcome, party, submitter or year.
+  - *Why:* archiving single meetings (1.9.0) produced the documents, but the questions that matter in local politics run across years: since when has a plan been discussed, how often, which motions were filed and what became of them. NotuBiz has no full-text search API and Open Raadsinformatie did not respond during development, so the search runs on the user's own archive. The motions module has structured outcomes but no keyword filter, so it is cached locally. Nieuw-West and Centrum do not use that module; the skill tells the assistant to search their archived documents and besluitenlijsten instead, and never to guess how a party voted.
+- **MCP tool `archive_period`** (server `amsterdam-raadsinformatie`) and script `skills/amsterdam-notubiz/scripts/archive_period.ps1`: archive all past meetings of an organisation over a range of months, skipping meetings that are already archived, in batches (`max_meetings`) with a dry run.
+  - *Why:* a searchable archive over years needs dozens of meetings; doing that one `archive_meeting` call at a time was impractical.
+- **`get_meetings` takes `year` and `month`**, using the NotuBiz `?year=&month=` parameters.
+  - *Why:* without them the API only returns recent and upcoming meetings, so older event IDs could not be found.
+- **MCP tool `bag_plannen_op_adres`** (server `bag`): the bestemmingsplannen, paraplu-plannen, enkel- and dubbelbestemmingen, building plane and aanduidingen at an address or RD point, with links to the rules, from the PDOK Ruimtelijke plannen WMS (CC0, no key). The `omgevingsplan` and `bag` skills explain that this is the temporary part of the omgevingsplan and point to Regels op de kaart for the rest.
+  - *Why:* the `omgevingsplan` skill could find publications but not answer "what is allowed here"; the only point lookup was the Omgevingsloket frontend, which the toolkit does not scrape.
+- **`adresdossier` skill** with a Markdown template (`references/dossier-template.md`): one address in, one dossier out, in a fixed order (BAG, CBS neighbourhood figures, zoning, permits in the gemeenteblad, APV and area decisions, Woo, council documents and motions, crime figures through the optional `politie-misdrijven` plugin), summary first and one section per source with dates and links.
+  - *Why:* residents, journalists and small parties usually need the whole picture of a place at once; doing it by hand meant eight searches with different codes. The skill limits itself to places, not people: no owners or residents, and no names of private persons.
+- **`tests/smoke_test.ps1`**: starts every server from `.mcp.json` as a client would and checks `initialize`, `tools/list` (expected tools, complete definitions), error codes `-32601` and `-32602`, and real calls against the live sources (`-Offline` skips those). `raadsarchief` is tested on a temporary mini-archive. Exit code 1 on any failure, optional JSON report.
+  - *Why:* with seven servers, a broken server after an update was only noticed when a tool silently failed in a conversation.
+
+### Changed
+- `amsterdam-raadsinformatie` server: invalid input now returns `-32602` (was `-32603`), consistent with the other servers.
+- `.mcp.json` and `mcp_config.example.json` register the `raadsarchief` server; README (English and Dutch), `rules/AGENTS.md` (sections 11 and 12), the `amsterdam-notubiz`, `raadsinformatie`, `bag` and `omgevingsplan` skills and `docs/architecture-v2.png` (7 servers, 13 skills) are updated. User-Agent strings of the changed servers and scripts name version 1.10.
+
 ## 1.9.1 – 2026-11-06
 
 ### Fixed

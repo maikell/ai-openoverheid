@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Source of docs/architecture-v2.png. Render at 2000x1250 CSS px with device scale factor 1.2 (2400x1500 PNG). -->
+<!-- Source of docs/architecture-v2.png. Render at 2000x1320 CSS px with device scale factor 1.2 (2400x1584 PNG). -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -13,7 +13,7 @@
   :root { --ink: #16202e; --muted: #4a5564; --soft: #6b7480; --bg: #f4f6f8; --line: #dfe3e8;
           --green: #127a68; --blue: #2e5fb3; --amber-bg: #fbf1d9; --amber: #8a6312; }
   * { box-sizing: border-box; margin: 0; }
-  body { width: 2000px; height: 1250px; background: var(--bg); font-family: Plex, sans-serif; color: var(--ink); padding: 72px 80px 0; position: relative; }
+  body { width: 2000px; height: 1320px; background: var(--bg); font-family: Plex, sans-serif; color: var(--ink); padding: 72px 80px 0; position: relative; }
   .eyebrow { font-family: PlexMono, monospace; font-size: 19px; letter-spacing: .16em; color: var(--muted); }
   h1 { font-size: 72px; font-weight: 700; letter-spacing: -.01em; margin-top: 14px; }
   .sub { font-size: 30px; color: var(--muted); margin-top: 12px; }
@@ -31,16 +31,17 @@
   .sec i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
   .sec b { font-weight: 600; } .sec span { color: var(--muted); }
   .row { display: grid; gap: 18px; }
-  .row.six { grid-template-columns: repeat(6, 1fr); }
-  .row.four { grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .row.six { grid-template-columns: repeat(7, 1fr); gap: 14px; }
+  .row.four { grid-template-columns: repeat(5, 1fr); gap: 20px; }
   .card { background: #fff; border: 1px solid var(--line); border-top: 5px solid var(--green); border-radius: 12px; padding: 22px 20px; position: relative; }
-  .six .card { height: 310px; }
-  .four .card { border-top-color: var(--blue); height: 208px; padding: 26px 26px; }
+  .six .card { height: 330px; padding: 20px 16px; }
+  .card.combo { border-top-color: var(--amber); }
+  .four .card { border-top-color: var(--blue); height: 262px; padding: 24px 22px; }
   .hd { display: flex; gap: 12px; align-items: flex-start; }
   .hd svg { flex: none; width: 30px; height: 30px; margin-top: 14px; stroke: var(--ink); fill: none; stroke-width: 1.6; }
   .four .hd svg { width: 36px; height: 36px; margin-top: 10px; }
   .t { font-size: 23px; font-weight: 600; line-height: 1.15; }
-  .four .t { font-size: 27px; }
+  .four .t { font-size: 25px; }
   .s { font-size: 16px; color: var(--muted); line-height: 1.3; margin-top: 2px; }
   .four .s { font-size: 18px; }
   .d { font-size: 16px; line-height: 1.45; margin-top: 14px; }
@@ -56,10 +57,10 @@
 </style>
 </head>
 <body>
-  <div class="eyebrow">OVERVIEW · TOOLKIT 1.9.0 · NOVEMBER 2026</div>
+  <div class="eyebrow">OVERVIEW · TOOLKIT 1.10.0 · NOVEMBER 2026</div>
   <h1>Dutch Gov AI Toolkit &amp; MCP Architecture</h1>
   <div class="sub">Skills and MCP servers for Dutch open government data, for Gemini and Claude</div>
-  <div class="badges"><span class="pill g">6 MCP servers</span><span class="pill o">11 skills</span></div>
+  <div class="badges"><span class="pill g">7 MCP servers</span><span class="pill o">13 skills</span></div>
   <div class="repo">github.com/maikell/ai-openoverheid</div>
 
   <div class="hosts">
@@ -75,8 +76,8 @@
       <div class="hd"><svg viewBox="0 0 24 24"><path d="M3 9.5 12 4l9 5.5M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/></svg>
         <div><div class="t">Raadsinformatie</div><div class="s">Amsterdam &amp; Stadsdeel Nieuw-West</div></div></div>
       <div class="d"><b>Data</b> NotuBiz API, Amsterdam + Nieuw-West</div>
-      <div class="tools">get_meetings<br>get_meeting_agenda<br>archive_meeting<span class="n">NEW</span></div>
-      <div class="note">Archives all stukken · SHA-256 · versions</div>
+      <div class="tools">get_meetings<br>get_meeting_agenda<br>archive_meeting<br>archive_period<span class="n">NEW</span></div>
+      <div class="note">Archives meetings or whole periods · SHA-256</div>
     </div>
     <div class="card">
       <div class="hd"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h3"/><circle cx="16" cy="17" r="2.2"/></svg>
@@ -106,11 +107,19 @@
       <div class="hd"><svg viewBox="0 0 24 24"><path d="M4 21V8l6-4v17M10 21h10V10h-10M13 13h1M17 13h1M13 17h1M17 17h1M6.5 10h1M6.5 14h1M6.5 18h1"/></svg>
         <div><div class="t">BAG</div><div class="s">Addresses &amp; buildings</div></div></div>
       <div class="d"><b>Data</b> PDOK Locatieserver + BAG API</div>
-      <div class="tools">bag_zoek_adres<br>bag_adresinfo<br>bag_pand</div>
+      <div class="tools">bag_zoek_adres<br>bag_adresinfo<br>bag_plannen_op_adres<span class="n">NEW</span><br>bag_pand</div>
+      <div class="note">+ zoning plans via PDOK</div>
+    </div>
+    <div class="card">
+      <div class="hd"><svg viewBox="0 0 24 24"><path d="M4 5h6l2 2h8v12H4z"/><circle cx="13" cy="13" r="3"/><path d="M15.2 15.2 18 18"/></svg>
+        <div><div class="t">Raadsarchief</div><div class="s">Search across years · motions</div></div></div>
+      <div class="d"><b>Data</b> local archive index + NotuBiz motions</div>
+      <div class="tools">archive_index<br>archive_search<br>motions_sync<br>motions_search</div>
+      <div class="note">New skill + server in 1.10.0</div>
     </div>
   </div>
 
-  <div class="sec"><i style="background:var(--blue)"></i><b>REST skill</b><span>the assistant calls the official API directly · no scraping</span></div>
+  <div class="sec"><i style="background:var(--blue)"></i><b>REST skill</b><span>the assistant calls the official API directly · no scraping</span><i style="background:var(--amber);margin-left:28px"></i><b>Combined skill</b><span>orchestrates the others</span></div>
   <div class="row four">
     <div class="card"><div class="hd"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
       <div><div class="t">Omgevingsplan</div><div class="s">Spatial planning</div></div></div>
@@ -124,6 +133,9 @@
     <div class="card"><div class="hd"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 4v16M4 12h16"/></svg>
       <div><div class="t">Amsterdam Kerncijfers</div><div class="s">BBGA open data</div></div></div>
       <div class="d"><b>Data</b> Onderzoek &amp; Statistiek Amsterdam</div><div class="x">Demographics, neighbourhood indicators, areas API</div></div>
+    <div class="card combo"><span class="new">NEW</span><div class="hd"><svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z"/><path d="M12 9s-3 2.8-3 5a3 3 0 0 0 6 0c0-2.2-3-5-3-5z"/></svg>
+      <div><div class="t">Adresdossier</div><div class="s">One address, all sources</div></div></div>
+      <div class="d"><b>Uses</b> BAG, CBS, zoning, APV, Woo, council</div><div class="x">Permits, motions, crime figures (plugin)</div></div>
   </div>
 
   <footer><span>Open data only · no API keys</span><span>Input validation on every MCP tool</span><span>SKILL.md + MCP: one repo for every assistant</span><span class="r">GPL-3.0 · data CC BY 4.0 (CBS)</span></footer>
